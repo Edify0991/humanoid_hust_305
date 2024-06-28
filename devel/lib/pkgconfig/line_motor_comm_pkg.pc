@@ -1,0 +1,8 @@
+prefix=/home/lhl/project/humanoid_hust_305/devel
+
+Name: line_motor_comm_pkg
+Description: Description of line_motor_comm_pkg
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 
