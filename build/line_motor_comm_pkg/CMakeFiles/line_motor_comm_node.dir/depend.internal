@@ -3,6 +3,7 @@
 
 line_motor_comm_pkg/CMakeFiles/line_motor_comm_node.dir/src/LineMotorComm.cpp.o
  /home/lhl/project/humanoid_hust_305/src/line_motor_comm_pkg/include/Modbus_Comm.h
+ /home/lhl/project/humanoid_hust_305/src/line_motor_comm_pkg/include/controlcan.h
  /home/lhl/project/humanoid_hust_305/src/line_motor_comm_pkg/src/LineMotorComm.cpp
  /opt/ros/noetic/include/ros/advertise_options.h
  /opt/ros/noetic/include/ros/advertise_service_options.h
@@ -65,6 +66,7 @@ line_motor_comm_pkg/CMakeFiles/line_motor_comm_node.dir/src/LineMotorComm.cpp.o
  /opt/ros/noetic/include/xmlrpcpp/XmlRpcValue.h
 line_motor_comm_pkg/CMakeFiles/line_motor_comm_node.dir/src/ModbusCommDrv.cpp.o
  /home/lhl/project/humanoid_hust_305/src/line_motor_comm_pkg/include/Modbus_Comm.h
+ /home/lhl/project/humanoid_hust_305/src/line_motor_comm_pkg/include/controlcan.h
  /home/lhl/project/humanoid_hust_305/src/line_motor_comm_pkg/src/ModbusCommDrv.cpp
  /opt/ros/noetic/include/ros/advertise_options.h
  /opt/ros/noetic/include/ros/advertise_service_options.h

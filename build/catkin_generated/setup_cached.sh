@@ -7,9 +7,4 @@
 # new environment variables
 
 # modified environment variables
-export CMAKE_PREFIX_PATH="/home/lhl/project/humanoid_hust_305/devel:$CMAKE_PREFIX_PATH"
-export LD_LIBRARY_PATH="/home/lhl/project/humanoid_hust_305/devel/lib:$LD_LIBRARY_PATH"
-export PKG_CONFIG_PATH="/home/lhl/project/humanoid_hust_305/devel/lib/pkgconfig:$PKG_CONFIG_PATH"
 export PWD='/home/lhl/project/humanoid_hust_305/build'
-export ROSLISP_PACKAGE_DIRECTORIES='/home/lhl/project/humanoid_hust_305/devel/share/common-lisp'
-export ROS_PACKAGE_PATH="/home/lhl/project/humanoid_hust_305/src:$ROS_PACKAGE_PATH"

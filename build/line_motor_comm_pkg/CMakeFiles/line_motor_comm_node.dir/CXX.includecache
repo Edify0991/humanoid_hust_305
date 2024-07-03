@@ -11,6 +11,10 @@ serial/serial.h
 -
 ros/ros.h
 -
+controlcan.h
+/home/lhl/project/humanoid_hust_305/src/line_motor_comm_pkg/include/controlcan.h
+
+/home/lhl/project/humanoid_hust_305/src/line_motor_comm_pkg/include/controlcan.h
 
 /home/lhl/project/humanoid_hust_305/src/line_motor_comm_pkg/src/LineMotorComm.cpp
 Modbus_Comm.h
