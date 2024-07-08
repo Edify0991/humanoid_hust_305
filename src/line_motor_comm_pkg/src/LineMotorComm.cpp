@@ -2,6 +2,11 @@
 
 using namespace std;
 
+// 该节点的全局变量
+ros::Publisher linemotor_state_pub;
+
+void *Receive_Linemotor_Fcn(void* param);
+
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "line_motor_comm_node");
@@ -68,15 +73,49 @@ int main(int argc, char** argv)
 		exit(1);
     }
 
+	// 创建接收汇川电机驱动器数据的线程
+	//int m_run0 = 1;
+	//pthread_t threadid;
+	//int ret;
+	//ret = pthread_create(&threadid, NULL, Receive_Linemotor_Fcn, &m_run0);
+
 	// 初始化左右腿直线电机
-	LineMotor left_leg(1), right_leg(2);
+	LineMotor left_leg(1);//, right_leg(2);
+	// 测试效果
+	left_leg.DrvDisable();
+	left_leg.DrvEnable();
+	left_leg.RelPos_Set(10, 4000);
+	left_leg.Clear_PosCmd();
+	left_leg.RelPos_Set(5, 4000);
+	left_leg.Clear_PosCmd();
+	left_leg.DrvDisable();
 
     ros::Rate loop_rate(100); // 100Hz，周期为10ms
     while(ros::ok())
     {
-		
+		ros::spinOnce();
         loop_rate.sleep();
     }
 
     return 0;
+}
+
+void *Receive_Linemotor_Fcn(void* param)
+{
+	int reclen = 0;
+	VCI_CAN_OBJ rec[3000];
+	int *run = (int*)param;
+	while((*run)&0x0f)
+	{
+		if(reclen=VCI_Receive(VCI_USBCAN2, 0, 0, rec, 3000, 100)>0)
+		{
+			for(int j=0;j<reclen;j++)
+			{
+				if(rec[j].ID)
+				{
+					
+				}
+			}
+		}
+	}
 }

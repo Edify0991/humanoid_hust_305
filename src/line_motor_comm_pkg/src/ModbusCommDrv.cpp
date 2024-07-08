@@ -5,7 +5,9 @@
  * 文件描述：该文件产生了一个直线电机类，用于配置直线电机的相关数据，对应驱动器为汇川SV660C
  *          需说明的是PDO的映射没有写在该类里面，需在上位机界面手动实现映射
  * Version：1.0
- * 第一次修改：将汇川驱动器修改为SV660C
+ * 第一次修改：将汇川驱动器修改为SV660C，2024年6月28日
+ *           完成驱动器使能、失能、SDO配置PDO、PDO配置轮廓位置模式
+ *           待加入回原点功能和接收线程
  * 第二次修改
  */
 #include <iostream>
@@ -57,14 +59,15 @@ LineMotor::LineMotor(uint8_t addr)
     */
     // 配置RPDO1，流程如下
     // sub-index = 0x01:目标位置
-    // sub-index = 0x01:轮廓速度
-    uint8_t temp_data[8][8] = {{0x23,0x00,0x14,0x01,Rx_COB_ID_L,Rx_COB_ID_H,0x00,0x80}, \
-                                {0x2F,0x00,0x14,0x02,0x01,0x00,0x00,0x00},\
+    // sub-index = 0x02:轮廓速度
+    uint8_t temp_data[8][8] = {{0x23,0x00,0x14,0x01,0x01,0x02,0x00,0x80}, \
+                                {0x23,0x00,0x14,0x02,0xFE,0x00,0x00,0x80}, \
+                                {0x23,0x00,0x14,0x03,0x00,0x00,0x00,0x80}, \
                                 {0x2F,0x00,0x16,0x00,0x00,0x00,0x00,0x00},\
                                 {0x23,0x00,0x16,0x01,0x20,0x00,0x7A,0x60},\
                                 {0x23,0x00,0x16,0x02,0x20,0x00,0x81,0x60},\
                                 {0x2F,0x00,0x16,0x00,0x02,0x00,0x00,0x00},\
-                                {0x23,0x00,0x14,0x01,Rx_COB_ID_L,Rx_COB_ID_H,0x00,0x00},\
+                                {0x23,0x00,0x14,0x01,0x01,0x02,0x00,0x00},\
                                 };
     sendTodriver_msg.ID = Sdo_COB_ID;
     for(int i = 0; i < 8; i++)
@@ -75,17 +78,18 @@ LineMotor::LineMotor(uint8_t addr)
     }
     // 配置RPDO2，流程如下
     // sub-index = 0x01:控制字
-    uint8_t temp_data_5[6][8] = {{0x23,0x00,0x14,0x01,Rx2_COB_ID_L,Rx2_COB_ID_H,0x00,0x80}, \
-                                {0x2F,0x00,0x14,0x02,0x01,0x00,0x00,0x00},\
-                                {0x2F,0x00,0x16,0x00,0x00,0x00,0x00,0x00},\
-                                {0x23,0x00,0x16,0x01,0x2b,0x00,0x40,0x60},\
-                                {0x2F,0x00,0x16,0x00,0x01,0x00,0x00,0x00},\
-                                {0x23,0x00,0x14,0x01,Rx2_COB_ID_L,Rx2_COB_ID_H,0x00,0x00},\
+    uint8_t temp_data_5[7][8] = {{0x23,0x01,0x14,0x01,0x01,0x03,0x00,0x80}, \
+                                {0x23,0x00,0x14,0x02,0xFE,0x00,0x00,0x80}, \
+                                {0x23,0x00,0x14,0x03,0x00,0x00,0x00,0x80}, \
+                                {0x2F,0x01,0x16,0x00,0x00,0x00,0x00,0x00},\
+                                {0x23,0x01,0x16,0x01,0x10,0x00,0x40,0x60},\
+                                {0x2F,0x01,0x16,0x00,0x01,0x00,0x00,0x00},\
+                                {0x23,0x01,0x14,0x01,0x01,0x03,0x00,0x00},\
                                 };
     sendTodriver_msg.ID = Sdo_COB_ID;
-    for(int i = 0; i < 8; i++)
+    for(int i = 0; i < 7; i++)
     {
-        array_copy(sendTodriver_msg.Data, temp_data[i], 8);
+        array_copy(sendTodriver_msg.Data, temp_data_5[i], 8);
         VCI_Transmit(VCI_USBCAN2, 0, 0, &sendTodriver_msg, 1);
         usleep(10000);
     }
@@ -107,24 +111,27 @@ LineMotor::LineMotor(uint8_t addr)
         VCI_Transmit(VCI_USBCAN2, 0, 0, &sendTodriver_msg, 1);
         usleep(10000);
     }
-    // 伺服驱动器启动流程设置
-    uint8_t temp_data_3[3][8] = {{0x2b,0x40,0x60,0x00,0x06,0x00,0x00,0x00},\
-                                {0x2b,0x40,0x60,0x00,0x07,0x00,0x00,0x00},\
-                                {0x2b,0x40,0x60,0x00,0x0f,0x00,0x00,0x00},\
-                                };
+
+    // 设置电子齿轮比
+    // 分子：8388608
+    // 分母：100
+    /* 直线电机指令单位与伸出轴位移的转换关系 */
+    /*
+    * 直线电机的重复定位精度M为0.02mm，因此令一个指令单位可移动0.02mm
+    * 减速比R=1；编码器分辨率Rg=8388608(23 bits)；导程Pg=2mm
+    * 电子齿轮比B/A=M*1/R*Pg=8388608/100；
+    */
+    uint8_t GearRation[2][8] = {{0x23,0x91,0x60,0x01,0x00,0x00,0x80,0x00},\
+                                {0x23,0x91,0x60,0x02,0x64,0x00,0x00,0x00}};
     sendTodriver_msg.ID = Sdo_COB_ID;
-    for(int i = 0; i < 7; i++)
+    for(int i = 0; i < 2; i++)
     {
-        array_copy(sendTodriver_msg.Data, temp_data_3[i], 8);
+        array_copy(sendTodriver_msg.Data, GearRation[i], 8);
         VCI_Transmit(VCI_USBCAN2, 0, 0, &sendTodriver_msg, 1);
         usleep(10000);
     }
-    // 设置到轮廓位置模式
-    uint8_t temp_data_4[8] = {0x2F,0x60,0x60,0x00,0x01,0x00,0x00,0x00};
-    sendTodriver_msg.ID = Sdo_COB_ID;
-    array_copy(sendTodriver_msg.Data, temp_data_4, 8);
-    VCI_Transmit(VCI_USBCAN2, 0, 0, &sendTodriver_msg, 1);
-    usleep(10000);
+    //开启NMT 操作模式
+    NMT_Enable(addr);
 }
 /*
  * 函数名称：DRIVER_OpenCanComm
@@ -155,6 +162,63 @@ int8_t LineMotor::DRIVER_OpenCanComm(void)
     return 1;
 }
 /*
+ * 函数名称：QuickStop
+ * 函数描述：驱动器选用自由停机方式停机
+ * 函数输入：None
+ * 函数返回：None
+ */
+void LineMotor::QuickStop(void)
+{
+    uint8_t temp_data[2][8] = {{0x2b,0x5A,0x60,0x00,0x00,0x00,0x00,0x00},\
+                                {0x2b,0x40,0x60,0x00,0x02,0x00,0x00,0x00},\
+                                };
+    sendTodriver_msg.ID = Sdo_COB_ID;
+    for(int i = 0; i < 2; i++)
+    {
+        array_copy(sendTodriver_msg.Data, temp_data[i], 8);
+        VCI_Transmit(VCI_USBCAN2, 0, 0, &sendTodriver_msg, 1);
+        usleep(10000);
+    }
+}
+/*
+ * 函数名称：DrvEnable
+ * 函数描述：驱动器由伺服无故障状态切换至伺服运行状态
+ * 函数输入：None
+ * 函数返回：None
+ */
+void LineMotor::DrvEnable(void)
+{
+    uint8_t temp_data[3][8] = {{0x2b,0x40,0x60,0x00,0x06,0x00,0x00,0x00},\
+                                {0x2b,0x40,0x60,0x00,0x07,0x00,0x00,0x00},\
+                                {0x2b,0x40,0x60,0x00,0x0f,0x00,0x00,0x00},\
+                                };
+    sendTodriver_msg.ID = Sdo_COB_ID;
+    for(int i = 0; i < 3; i++)
+    {
+        array_copy(sendTodriver_msg.Data, temp_data[i], 8);
+        VCI_Transmit(VCI_USBCAN2, 0, 0, &sendTodriver_msg, 1);
+        usleep(10000);
+    }
+}
+/*
+ * 函数名称：DrvDisable
+ * 函数描述：驱动器失能
+ * 函数输入：None
+ * 函数返回：None
+ */
+void LineMotor::DrvDisable(void)
+{
+    uint8_t temp_data[1][8] = {{0x2b,0x40,0x60,0x00,0x07,0x00,0x00,0x00},\
+                                };
+    sendTodriver_msg.ID = Sdo_COB_ID;
+    for(int i = 0; i < 1; i++)
+    {
+        array_copy(sendTodriver_msg.Data, temp_data[i], 8);
+        VCI_Transmit(VCI_USBCAN2, 0, 0, &sendTodriver_msg, 1);
+        usleep(10000);
+    }
+}
+/*
  * 函数名称：AbsPos_Set
  * 函数描述：以绝对式位置控制方式控制电机运动
  * 函数输入：None
@@ -166,12 +230,26 @@ void LineMotor::AbsPos_Set(float absPos)
 /*
  * 函数名称：RelPos_Set
  * 函数描述：以相对位移控制方式控制电机运动
- * 函数输入：relPos - 直线电机伸缩距离
- *         refSpeed - 点对点运动时的参考速度
+ * 函数输入：relPos - 直线电机伸缩距离(mm)
+ *         refSpeed - 点对点运动时的参考速度(mm/s)
  * 函数返回：None
  */
 void LineMotor::RelPos_Set(float relPos, uint32_t refSpeed)
 {
+    // 需要注意的是这里使用类的变量无法发送到驱动器上
+    VCI_CAN_OBJ sendtoDrv;
+    VCI_CAN_OBJ sendtoDrv2;
+
+    sendtoDrv.SendType = 1;      // 发送类型为单次发送
+    sendtoDrv.RemoteFlag = 0;    // 远程帧不开启
+    sendtoDrv.ExternFlag = 0;    // 扩展帧不开启
+    sendtoDrv.DataLen = 8;       // 数据长度为8个字节
+
+    sendtoDrv2.SendType = 1;      // 发送类型为单次发送
+    sendtoDrv2.RemoteFlag = 0;    // 远程帧不开启
+    sendtoDrv2.ExternFlag = 0;    // 扩展帧不开启
+    sendtoDrv2.DataLen = 2;       // 控制字数据长度为2个字节
+
     int32_t drvPos = fPos_to_iPos_Fcn(relPos);
     uint32_t drvSpeed = realSpeed_to_drvSpeed(refSpeed);
 
@@ -185,38 +263,68 @@ void LineMotor::RelPos_Set(float relPos, uint32_t refSpeed)
     uint8_t drvSpeed_24 = (((uint32_t)drvSpeed>>16) & 0x000000ff);
     uint8_t drvSpeed_32 = (((uint32_t)drvSpeed>>24) & 0x000000ff);
 
-    uint8_t temp_data_1[8] = {drvPos_32,drvPos_24,drvPos_16,drvPos_8,\
-                              drvSpeed_32,drvSpeed_24,drvSpeed_16,drvSpeed_8\
-                             };
-    uint8_t temp_data_2[2] = {0x1f,0x00};
-    // 先设置轮廓速度和目标位置
-    sendTodriver_msg.ID = RPdo1_COB_ID;
-    sendTodriver_msg.DataLen = 8;
-    array_copy(sendTodriver_msg.Data, temp_data_1, 8);
+    // uint8_t control_paras[2][8] = {{0x23,0x7A,0x60,0x00,drvPos_8,drvPos_16,drvPos_24,drvPos_32},\
+    //                             {0x23,0x81,0x60,0x00,drvSpeed_16,drvSpeed_24,drvSpeed_32},\
+    //                             };
+    // sendTodriver_msg.ID = Sdo_COB_ID;
+    // for(int i = 0; i < 2; i++)
+    // {
+    //     array_copy(sendTodriver_msg.Data, control_paras[i], 8);
+    //     VCI_Transmit(VCI_USBCAN2, 0, 0, &sendTodriver_msg, 1);
+    //     usleep(1000);
+    // }
+
+    uint8_t cmd[8] = {0x2b,0x40,0x60,0x00,0x7f,0x00,0x00,0x00};
+    sendTodriver_msg.ID = Sdo_COB_ID;
+    array_copy(sendTodriver_msg.Data, cmd, 8);
     VCI_Transmit(VCI_USBCAN2, 0, 0, &sendTodriver_msg, 1);
+
+    uint8_t temp_data_1[8] = {drvPos_8,drvPos_16,drvPos_24,drvPos_32,\
+                              drvSpeed_8,drvSpeed_16,drvSpeed_24,drvSpeed_32\
+                             };
+    uint8_t temp_data_2[2] = {0x7f,0x00};
+    // 先设置轮廓速度和目标位置
+    sendtoDrv.ID = 0x201;
+    array_copy(sendtoDrv.Data, temp_data_1, 8);
+    VCI_Transmit(VCI_USBCAN2, 0, 0, &sendtoDrv, 1);
     usleep(1000);
     // 再设置控制字
-    sendTodriver_msg.ID = RPdo2_COB_ID;
-    sendTodriver_msg.DataLen = 2;
-    array_copy(sendTodriver_msg.Data, temp_data_2, 2);
-    VCI_Transmit(VCI_USBCAN2, 0, 0, &sendTodriver_msg, 1);
+    sendtoDrv2.ID = 0x301;
+    sendtoDrv2.DataLen = 2;
+    array_copy(sendtoDrv2.Data, temp_data_2, 2);
+    VCI_Transmit(VCI_USBCAN2, 0, 0, &sendtoDrv2, 1);
     usleep(1000);
-    // 注意事项，发送一个PDO后，需要发送一个同步对象到总线上，待测试
-    // uint8_t temp_data_1[8] = {0x00}; 
-    // sendTodriver_msg.ID = 0x80;
-    // sendTodriver_msg.DataLen = 0x00;
-    // array_copy(sendTodriver_msg.Data, temp_data_1, 8);
+}
+void LineMotor::Clear_PosCmd(void)
+{
+    uint8_t cmd[8] = {0x2b,0x40,0x60,0x00,0x6f,0x00,0x00,0x00};
+    sendTodriver_msg.ID = Sdo_COB_ID;
+
+    array_copy(sendTodriver_msg.Data, cmd, 8);
+    VCI_Transmit(VCI_USBCAN2, 0, 0, &sendTodriver_msg, 1);
+}
+
+void LineMotor::NMT_Enable(uint8_t addr)
+{
+    VCI_CAN_OBJ sendtoDrv;
+    sendtoDrv.SendType = 1;      // 发送类型为单次发送
+    sendtoDrv.RemoteFlag = 0;    // 远程帧不开启
+    sendtoDrv.ExternFlag = 0;    // 扩展帧不开启
+    sendtoDrv.DataLen = 2;       // 数据长度为8个字节
+
+    uint8_t data[2] = {0x01,addr};
+    array_copy(sendtoDrv.Data, data, 8);
+    VCI_Transmit(VCI_USBCAN2, 0, 0, &sendtoDrv, 1);
 }
 /*
  * 函数名称：fPos_to_iPos_Fcn
- * 函数描述：浮点数位置指令转为供驱动器使用的整型位置指令
+ * 函数描述：驱动器浮点数位移量转为供驱动器使用的整型位置指令
  * 函数输入：None
  * 函数返回：返回供驱动器使用的32位整型变量
  */
 int32_t LineMotor::fPos_to_iPos_Fcn(float target_position)
 {
-    float num_of_rotation = target_position / LEAD_SCREW;
-    int32_t position_Q32 = (int32_t)(num_of_rotation * MAX_INSTRUCTION_UNIT); 
+    int32_t position_Q32 = target_position / INSTRUCTION_UNIT;
     if(position_Q32 > MAX_TARGET_POSITION)
     {
         position_Q32 = MAX_TARGET_POSITION;
@@ -229,13 +337,13 @@ int32_t LineMotor::fPos_to_iPos_Fcn(float target_position)
 }
 /*
  * 函数名称：realSpeed_to_drvSpeed
- * 函数描述：将实际的设定速度(r/min)转为驱动器使用的速度指令(指令单位/s)
- * 函数输入：None
- * 函数返回：供驱动器使用的32位无符号整型变量
+ * 函数描述：将实际的设定速度(mm/s)转为驱动器使用的速度指令(指令单位/s)
+ * 函数输入：relSpeed - 实际速度(mm/s)
+ * 函数返回：供驱动器使用的32位无符号整型变量(指令单位/s)
  */
 uint32_t LineMotor::realSpeed_to_drvSpeed(float relSpeed)
 {
-    uint32_t speed_Q31 = (uint32_t)(relSpeed / 60 * MAX_INSTRUCTION_UNIT);
+    uint32_t speed_Q31 = (relSpeed / INSTRUCTION_UNIT);
     if(speed_Q31 > MAX_PROFILE_SPEED)
     {
         speed_Q31 = MAX_PROFILE_SPEED;

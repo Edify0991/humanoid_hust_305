@@ -16,7 +16,11 @@ controlcan.h
 
 /home/lhl/project/humanoid_hust_305/src/line_motor_comm_pkg/include/controlcan.h
 
-/home/lhl/project/humanoid_hust_305/src/line_motor_comm_pkg/src/LineMotorComm.cpp
+/home/lhl/project/humanoid_hust_305/src/line_motor_comm_pkg/src/ModbusCommDrv.cpp
+iostream
+-
+string.h
+-
 Modbus_Comm.h
 /home/lhl/project/humanoid_hust_305/src/line_motor_comm_pkg/src/Modbus_Comm.h
 
