@@ -82,3 +82,5 @@ target_link_libraries(wit_sensor_node
 * 两台控制器以网线相连，算作两个CAN通道吗？
 
 答：两台控制器以串联方式，串联在一条CAN通道上
+
+试试fetch
