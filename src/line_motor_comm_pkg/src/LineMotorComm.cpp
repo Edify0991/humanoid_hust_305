@@ -800,8 +800,8 @@ int8_t CanPort_Open(void)
 	// CAN通信板载信息获取，后续待优化
     VCI_BOARD_INFO pInfo1 [50];
     VCI_BOARD_INFO pInfo;
-    int MotorNum = VCI_FindUsbDevice2(pInfo1);
-    if(VCI_OpenDevice(VCI_USBCAN2, 0, 0) == 1)
+    int MotorNum = VCI_FindUsbDevice2(pInfo1);	// 获取计算机中已插入的USB-CAN适配器的数量
+    if(VCI_OpenDevice(VCI_USBCAN2, 0, 0) == 1)	// 设备类型：USBCAN-2A或USBCAN-2C或CANalyst-II  设备索引：第一个设备  保留参数（默认0）
     {
         ROS_INFO_STREAM(">>Open device success!");
     }
@@ -813,7 +813,7 @@ int8_t CanPort_Open(void)
     if(VCI_ReadBoardInfo(VCI_USBCAN2, 0, &pInfo) == 1)
     {
         printf(">>Getting board information success!");
-        printf(">>Serial_Num:%c", pInfo.str_Serial_Num[0]);
+        printf(">>Serial_Num:%c", pInfo.str_Serial_Num[0]);		// 此板卡的序列号，在CHAR str_Serial_Num[20];中
 		printf("%c", pInfo.str_Serial_Num[1]);
 		printf("%c", pInfo.str_Serial_Num[2]);
 		printf("%c", pInfo.str_Serial_Num[3]);
@@ -834,7 +834,7 @@ int8_t CanPort_Open(void)
 		printf("%c", pInfo.str_Serial_Num[18]);
 		printf("%c", pInfo.str_Serial_Num[19]);printf("\n");
 
-		printf(">>hw_Type:%c", pInfo.str_hw_Type[0]);
+		printf(">>hw_Type:%c", pInfo.str_hw_Type[0]);			// 硬件类型，比如“USBCAN V1.00”（注意：包括字符串结束符’\0’），在CHAR str_hw_Type[40];中
 		printf("%c", pInfo.str_hw_Type[1]);
 		printf("%c", pInfo.str_hw_Type[2]);
 		printf("%c", pInfo.str_hw_Type[3]);
@@ -846,7 +846,7 @@ int8_t CanPort_Open(void)
 		printf("%c", pInfo.str_hw_Type[9]);printf("\n");
 
 		printf(">>Firmware Version:V");
-		printf("%x", (pInfo.fw_Version&0xF00)>>8);
+		printf("%x", (pInfo.fw_Version&0xF00)>>8);				// 固件版本号，用16进制表示。比如0x0100表示V1.00。
 		printf(".");
 		printf("%x", (pInfo.fw_Version&0xF0)>>4);
 		printf("%x", pInfo.fw_Version&0xF);

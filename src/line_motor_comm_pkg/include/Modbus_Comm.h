@@ -51,7 +51,7 @@ public:
      * TPDO3:0111b+addr；RPDO3：1000b+addr；
      * T_SDO:1011b(580h)+addr；R_SDO：1100b(600h)+addr;
     */
-    uint16_t RPdo1_COB_ID; // COB-ID = Function code + Node addr
+    uint16_t RPdo1_COB_ID; // COB-ID = Object function code(4bit) + Node addr(7bit)
     uint16_t RPdo2_COB_ID;
     uint16_t TPdo1_COB_ID;
     uint32_t Sdo_COB_ID; 

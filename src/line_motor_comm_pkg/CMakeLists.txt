@@ -8,6 +8,9 @@ set(CMAKE_BUILD_TYPE Debug)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
+
+set(serial_DIR /home/edifykd/Code/serial/build/devel/share/serial/cmake)
+
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
@@ -15,6 +18,8 @@ find_package(catkin REQUIRED COMPONENTS
   serial
   sensor_msgs
 )
+
+find_package(serial REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -116,6 +121,7 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  ${serial_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -146,6 +152,7 @@ include_directories(
 link_directories(
   lib
   ${catkin_LIB_DIRS}
+  ${serial_LIBRARY_DIRS}
 )
 
 if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "aarch64") 
