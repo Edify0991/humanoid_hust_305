@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.1.0)
-project(line_motor_comm_pkg)
+cmake_minimum_required(VERSION 3.0.2)
+project(wit_sensor_comm_pkg)
 
 set(CMAKE_BUILD_TYPE Debug)
 ## Compile as C++11, supported in ROS Kinetic and newer
@@ -10,10 +10,10 @@ set(CMAKE_BUILD_TYPE Debug)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
-  rospy
   std_msgs
   serial
   sensor_msgs
+  line_motor_comm_pkg
 )
 
 ## System dependencies are found with CMake's conventions
@@ -64,7 +64,12 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate actions in the 'action' folder
-# add_action_files(void
+# add_action_files(
+#   FILES
+#   Action1.action
+#   Action2.action
+# )
+
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
@@ -101,9 +106,9 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES line_motor_comm_pkg
-#  CATKIN_DEPENDS roscpp rospy std_msgs
+  INCLUDE_DIRS include
+  LIBRARIES wit_sensor
+  CATKIN_DEPENDS roscpp std_msgs
 #  DEPENDS system_lib
 )
 
@@ -120,7 +125,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/line_motor_comm_pkg.cpp
+#   src/${PROJECT_NAME}/wit_sensor.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -131,6 +136,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
+add_executable(wit_sensor_node src/WitSensorRcv.cpp src/WitSensorDrv.cpp src/WitSensorComm.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -143,23 +149,8 @@ include_directories(
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-link_directories(
-  lib
-  ${catkin_LIB_DIRS}
-)
-
-if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "aarch64") 
-    set(EXTRA_LIBS libUnitreeMotorSDK_Arm64.so)
-else()
-    set(EXTRA_LIBS libUnitreeMotorSDK_Linux64.so)
-endif()
-
-add_executable(line_motor_comm_node src/LineMotorComm.cpp src/ModbusCommDrv.cpp src/B1MotorControl.cpp)
-
-target_link_libraries(line_motor_comm_node
-   ${catkin_LIBRARIES}
-   controlcan
-   ${EXTRA_LIBS}
+target_link_libraries(wit_sensor_node
+  ${catkin_LIBRARIES}
 )
 
 #############
@@ -209,7 +200,7 @@ target_link_libraries(line_motor_comm_node
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_line_motor_comm_pkg.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_wit_sensor.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

@@ -1,2 +1,0 @@
-line_motor_comm_pkg
--DCATKIN_DEVEL_PREFIX=/home/lhl/project/humanoid_hust_305/devel -DCMAKE_INSTALL_PREFIX=/home/lhl/project/humanoid_hust_305/install -G Unix Makefiles

@@ -62,8 +62,8 @@ typedef struct _INIT_CONFIG{
 	DWORD	AccMask;
 	DWORD	Reserved;
 	UCHAR	Filter;
-	UCHAR	Timing0;	
-	UCHAR	Timing1;	
+	UCHAR	Timing0;
+	UCHAR	Timing1;
 	UCHAR	Mode;
 }VCI_INIT_CONFIG,*PVCI_INIT_CONFIG;
 

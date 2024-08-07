@@ -30,3 +30,11 @@
 *.exe
 *.out
 *.app
+
+# Compiled folder and file
+build/
+devel/
+.vscode/
+.catkin_workspace
+
+# shishi jiushishi

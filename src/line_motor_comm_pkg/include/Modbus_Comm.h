@@ -66,16 +66,18 @@ public:
     int8_t DRIVER_OpenCanComm(void); // 开启can通信
     void AbsPos_Set(float absPos); // 绝对位置设置
     void RelPos_Set(float relPos, uint32_t refSpeed); // 相对位置设置
-    void AbsPos_Fdb(void);           // 绝对位置反馈值获取
+    void Gozero_Fdb(void);           // 相对位置反馈值获取
     void Clear_PosCmd(void);         
 
     void QuickStop(void);   // 快速停机
     void DrvDisable(void);  // 驱动器失能
     void DrvEnable(void);   // 驱动器使能 
+    void DrvReset(void);    // 直线电机复位
+    void DrvPosMode(void); // 设置到轮廓位置模式
 
     void NMT_Enable(uint8_t addr);
     int32_t fPos_to_iPos_Fcn(float target_position);  // 浮点位置指令转为供驱动器使用的int32位置指令
-    uint32_t realSpeed_to_drvSpeed(float relSpeed);   // 实际设定速度转为供驱动器使用的驱动器轮廓速度
+    uint32_t realSpeed_to_drvSpeed(uint32_t relSpeed);   // 实际设定速度转为供驱动器使用的驱动器轮廓速度
     void array_copy(uint8_t send_data[], uint8_t given_data[], uint8_t length);
 };
 
