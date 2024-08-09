@@ -220,9 +220,9 @@ void JointMotor::TorqueMode(float tau, uint8_t serialport)
  */
 void JointMotor::MixedMode(float tau, float dq, float q, float kp, float kd, uint8_t serialport)
 {
-    motor_cmd.tau = tau;
-    motor_cmd.dq = dq;
-    motor_cmd.q = q;
+    motor_cmd.tau = tau* queryGearRatio(motor_cmd.motorType);
+    motor_cmd.dq = dq* queryGearRatio(motor_cmd.motorType);
+    motor_cmd.q = q* queryGearRatio(motor_cmd.motorType);
     motor_cmd.kp = kp;
     motor_cmd.kd = kd;
     motor_cmd.mode = queryMotorMode(motor_cmd.motorType, MotorMode::FOC);

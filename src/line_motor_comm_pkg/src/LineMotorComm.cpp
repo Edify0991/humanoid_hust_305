@@ -10,8 +10,9 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
+#include <chrono>
 #define hip_pitch_target 0.10//弧度制
-#define hip_roll_target 0.095//弧度制，最早能成功站立的一次是0.07
+#define hip_roll_target 0.094//弧度制，最早能成功站立的一次是0.07
 #define knee_target 30//单位mm
 
 
@@ -26,6 +27,19 @@ volatile double angular_vel[3];
 volatile double acceleration[3];
 volatile uint RTPos_left;//左腿绝对位置,1mm对应50编码器值
 volatile uint RTPos_right;//右腿绝对位置
+const int usleep_time = 1000;
+
+// 绝对起点位置
+// 4个A1电机
+const float StartPos_motorL_0_a = 0.0559651;
+const float StartPos_motorL_1_a = 0.302414;
+const float StartPos_motorR_0_a = 0.192464;
+const float StartPos_motorR_1_a = 0.254962;
+// 4个B1电机
+const float StartPos_motorL_0 = 0.261716;
+const float StartPos_motorL_2 = 0.489245;
+const float StartPos_motorR_0 = 0.30755;
+const float StartPos_motorR_2 = 0.183157;
 
 float motorL_0_ORI;//记录B1电机上电初始值,0是侧摆电机，2是前后摆电机
 float motorL_2_ORI;
@@ -35,13 +49,13 @@ float motorL_0_ORI_a;
 float motorL_1_ORI_a;
 float motorR_0_ORI_a;
 float motorR_1_ORI_a;
-int k_ankle_hip_roll=1;//踝关节侧摆差动大小与髋侧摆的关系
+
 
 int CntPitch=0;//往前迈步时的数组元素位置
 int CntRoll=0;//侧摆腿时的数组元素位置
 int Pitch_Roll_waittime=0;//侧摆到位后等待的长度
 
-const int number = 1560;
+const int number = 3478;
 float left_kuan[number] = {0};
 float right_kuan[number] = {0};
 float kneel[number] = {0};
@@ -266,6 +280,7 @@ int main(int argc, char** argv)
 	right_leg.DrvReset();
 	usleep(3000000);
 
+
 	while((!go_zero_status_1) | (!go_zero_status_2))
 	{
 		left_leg.Gozero_Fdb();
@@ -314,6 +329,49 @@ int main(int argc, char** argv)
 	std::cout <<  "motorR_0_ORI_a   "    << motorR_0_ORI_a<<  std::endl;
 	std::cout <<  "motorR_1_ORI_a   "    << motorR_1_ORI_a<<  std::endl;
 
+
+	// 到绝对位置起点
+	// A1电机复位
+	int InitPoint_num = 100;
+	for(int i=0;i<=InitPoint_num;i++)
+	{
+		motorL_0.PosMode(3, 1, motorL_0_ORI + (StartPos_motorL_0 - motorL_0_ORI) * i / (float)InitPoint_num, 1);
+		usleep(usleep_time);
+		motorL_2.PosMode(3, 1, motorL_2_ORI + (StartPos_motorL_2 - motorL_2_ORI) * i / (float)InitPoint_num, 1);
+		usleep(usleep_time);
+		motorR_0.PosMode(3, 1, motorR_0_ORI + (StartPos_motorR_0 - motorR_0_ORI) * i / (float)InitPoint_num, 2);
+		usleep(usleep_time);
+		motorR_2.PosMode(3, 1, motorR_2_ORI + (StartPos_motorR_2 - motorR_2_ORI) * i / (float)InitPoint_num, 2);
+		usleep(usleep_time);
+		motorL_0_a.PosMode(0.3, 10, motorL_0_ORI_a + (StartPos_motorL_0_a - motorL_0_ORI_a) * i / (float)InitPoint_num, 3);
+		usleep(usleep_time);
+		motorL_1_a.PosMode(0.3, 10, motorL_1_ORI_a + (StartPos_motorL_1_a - motorL_1_ORI_a) * i / (float)InitPoint_num, 3);
+		usleep(usleep_time);
+		motorR_0_a.PosMode(0.3, 10, motorR_0_ORI_a + (StartPos_motorR_0_a - motorR_0_ORI_a) * i / (float)InitPoint_num, 4);
+		usleep(usleep_time);
+		motorR_1_a.PosMode(0.3, 10, motorR_1_ORI_a + (StartPos_motorR_1_a - motorR_1_ORI_a) * i / (float)InitPoint_num, 4);
+		usleep(usleep_time);
+	}
+	
+	// 给初始位置赋值
+	motorL_0_ORI = StartPos_motorL_0;
+	motorL_2_ORI = StartPos_motorL_2;
+	motorR_0_ORI = StartPos_motorR_0;
+	motorR_2_ORI = StartPos_motorR_2;
+	motorL_0_ORI_a = StartPos_motorL_0_a;
+	motorL_1_ORI_a = StartPos_motorL_1_a;
+	motorR_0_ORI_a = StartPos_motorR_0_a;
+	motorR_1_ORI_a = StartPos_motorR_1_a;
+
+	std::cout<<"L-0"<< motorL_0.motor_ret.q/ queryGearRatio(MotorType::B1)<<endl;
+	std::cout<<"L-2"<< motorL_2.motor_ret.q/ queryGearRatio(MotorType::B1)<<endl;
+	std::cout<<"R-0"<< motorR_0.motor_ret.q/ queryGearRatio(MotorType::B1)<<endl;
+	std::cout<<"R-2"<< motorR_2.motor_ret.q/ queryGearRatio(MotorType::B1)<<endl;
+	std::cout<<"L-0-A"<<motorL_0_a.motor_ret.q/ queryGearRatio(MotorType::A1) <<endl;
+	std::cout<<"L-1-A"<< motorL_1_a.motor_ret.q/ queryGearRatio(MotorType::A1)<<endl;
+	std::cout<<"R-0-A"<< motorR_0_a.motor_ret.q/ queryGearRatio(MotorType::A1)<<endl;
+	std::cout<<"R-1-A"<< motorR_1_a.motor_ret.q/ queryGearRatio(MotorType::A1)<<endl;
+
 	int cnt=0;//开始正式走步态了
 	// while(cnt<2*unit_time)//走启动步态
 	
@@ -330,6 +388,13 @@ int main(int argc, char** argv)
 	int leg_flag = 0;//由turn_flag的奇偶来判断是迈哪条腿
 	int leg_flag_temp=0;//记录上一个循环中的leg_flag,当上一个循环与本循环中的leg_flag不同时，触发侧摆运动
 	int first_step=0;//走第一步时，侧摆0.25个周期，第二步及以后，侧摆走0.5个周期
+	int total_steps=3;//总共走x步
+	int current_step=0;//记录当前在走第几步
+	float V_LeftHip2;//左髋前后摆速度
+	float V_RightHip2;//右髋前后摆速度
+	float V_LeftAnkle;//左髋前后摆速度
+	float V_RightAnkle;//右髋前后摆速度
+	int k_ankle_hip_roll=1;//踝关节侧摆差动大小与髋侧摆的关系
 
 	knee[unit_time]=knee[unit_time-1];
 	knee_bigabs = knee[0];
@@ -442,56 +507,71 @@ int main(int argc, char** argv)
 */
 
 
-//以下为仲的侧摆分离步态，先侧摆到极值点再迈腿
-	while(CntPitch<number-8)
+	//以下为仲的侧摆分离步态，先侧摆到极值点再迈腿
+	while(CntPitch < number)
 	{		
 		left_leg.Clear_PosCmd();
 		right_leg.Clear_PosCmd();
 
 		//以下为迈步过程
-		if (CntPitch==600)//运动的前600个点为下蹲，不需要加侧摆,不需要加停顿
+		if (CntPitch == 600)	// 运动的前600个点为下蹲，不需要加侧摆,不需要加停顿
 		{
 			hip_flag=1;
 		}
 
-		if (CntPitch >= 600 && (CntPitch - 600) % 480 == 0) //600个点之后需要加侧摆和停顿
+		if (CntPitch >= 600 && (CntPitch - 600) % 480 == 0)	// 600个点之后需要加侧摆和停顿
 		{
 			turn_flag++;
 		}
 
-		//以下为下蹲过程中
-		if (hip_flag==0)
+		// 以下为下蹲过程中
+		if (hip_flag == 0)
 		{
-			motorL_0_a.PosMode(0.3, 10, motorL_0_ORI_a-anklel[CntPitch], 3);
-			usleep(100);
-			motorL_1_a.PosMode(0.3, 10, motorL_1_ORI_a+anklel[CntPitch], 3);
-			usleep(100);
-			motorR_0_a.PosMode(0.3, 10, motorR_0_ORI_a+ankler[CntPitch], 4);
-			usleep(100);
-			motorR_1_a.PosMode(0.3, 10, motorR_1_ORI_a-ankler[CntPitch], 4);
-			usleep(100);
+			motorL_0_a.PosMode(0.3, 10, motorL_0_ORI_a - anklel[CntPitch], 3);
+			usleep(usleep_time);
+			motorL_1_a.PosMode(0.3, 10, motorL_1_ORI_a + anklel[CntPitch], 3);
+			usleep(usleep_time);
+			motorR_0_a.PosMode(0.3, 10, motorR_0_ORI_a + ankler[CntPitch], 4);
+			usleep(usleep_time);
+			motorR_1_a.PosMode(0.3, 10, motorR_1_ORI_a - ankler[CntPitch], 4);
+			usleep(usleep_time);
 			motorR_2.PosMode(3, 1, motorR_2_ORI-right_kuan[CntPitch], 2);
-			usleep(100);
+			usleep(usleep_time);
 			motorL_2.PosMode(3, 1, motorL_2_ORI+left_kuan[CntPitch], 1);
-			usleep(100);
+			usleep(usleep_time);
 			if (CntPitch % 6 == 0) 
-			{	
+			{
 				TempCnt1 += 6;
 			}
 			left_leg.RelPos_Set(kneel[TempCnt1], 4000);//此处的RelPos已变成绝对位置模式
-			usleep(100);
+			usleep(usleep_time);
 			right_leg.RelPos_Set(kneer[TempCnt1], 4000);
-			usleep(100);
+			usleep(usleep_time);
 			motorL_0.PosMode(0.5, 1, motorL_0_ORI, 1);//锁住侧摆关节
-			usleep(100);
+			usleep(usleep_time);
 			motorR_0.PosMode(0.5, 1, motorR_0_ORI, 2);
-			usleep(100);
+			usleep(usleep_time);
 			CntPitch=CntPitch+1;
 		}
 
 		//以下为迈步过程
 		if (hip_flag==1)
 		{
+			if (CntPitch<number-8)
+			{
+				V_LeftHip2= (left_kuan[CntPitch+8]-left_kuan[CntPitch])/0.03;
+				V_RightHip2= (right_kuan[CntPitch+8]-right_kuan[CntPitch])/0.03;
+				V_LeftAnkle= (anklel[CntPitch+8]-anklel[CntPitch])/0.03;
+				V_RightAnkle= (ankler[CntPitch+8]-ankler[CntPitch])/0.03;
+			}
+			else 
+			{
+				V_LeftHip2= (0-left_kuan[CntPitch])/0.03;
+				V_RightHip2= (0-right_kuan[CntPitch])/0.03;	
+				V_LeftAnkle= (0-anklel[CntPitch])/0.03;	
+				V_RightAnkle= (0-ankler[CntPitch])/0.03;
+			}
+
 			if (turn_flag != 0 && turn_flag % 2 == 1) //迈右腿
 			{
 				leg_flag=1;
@@ -500,17 +580,17 @@ int main(int argc, char** argv)
 				{
 					for(int i=0;i<0.5*unit_time;i++)//每次走0.5个unit_time
 					{
-						motorL_0.PosMode(3, 1, motorL_0_ORI-hip_roll[CntRoll%(2*unit_time)], 1);//“加”为王梦迪的
-						usleep(2000);
-						motorR_0.PosMode(3, 1, motorR_0_ORI-hip_roll[CntRoll%(2*unit_time)], 2);
-						usleep(2000);
-						motorL_0_a.PosMode(0.3, 10, motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
-						usleep(100);
-						motorL_1_a.PosMode(0.3, 10, motorL_1_ORI_a+anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
-						usleep(100);
-						motorR_0_a.PosMode(0.3, 10, motorR_0_ORI_a+ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
-						usleep(100);
-						motorR_1_a.PosMode(0.3, 10, motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
+						motorL_0.PosMode(6, 10, motorL_0_ORI-hip_roll[CntRoll%(2*unit_time)], 1);//“加”为王梦迪的
+						usleep(usleep_time);
+						motorR_0.PosMode(6, 10, motorR_0_ORI-hip_roll[CntRoll%(2*unit_time)], 2);
+						usleep(usleep_time);
+						motorL_0_a.PosMode(1, 20, motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
+						usleep(usleep_time);
+						motorL_1_a.PosMode(1, 20, motorL_1_ORI_a+anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
+						usleep(usleep_time);
+						motorR_0_a.PosMode(1, 20, motorR_0_ORI_a+ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
+						usleep(usleep_time);
+						motorR_1_a.PosMode(1, 20, motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
 						CntRoll += 1;//这个增量不需要与CntPitch增量一致
 					}
 				first_step=1;
@@ -520,31 +600,43 @@ int main(int argc, char** argv)
 				{
 					for(int i=0;i<unit_time;i++)//每次走1个unit_time
 					{
-						motorL_0.PosMode(3, 1, motorL_0_ORI-hip_roll[CntRoll%(2*unit_time)], 1);//“加”为王梦迪的
-						usleep(2000);
-						motorR_0.PosMode(3, 1, motorR_0_ORI-hip_roll[CntRoll%(2*unit_time)], 2);
-						usleep(2000);
-						motorL_0_a.PosMode(0.3, 10, motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
-						usleep(100);
-						motorL_1_a.PosMode(0.3, 10, motorL_1_ORI_a+anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
-						usleep(100);
-						motorR_0_a.PosMode(0.3, 10, motorR_0_ORI_a+ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
-						usleep(100);
-						motorR_1_a.PosMode(0.3, 10, motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
+						motorL_0.PosMode(6, 10, motorL_0_ORI-hip_roll[CntRoll%(2*unit_time)], 1);//“加”为王梦迪的
+						usleep(usleep_time);
+						motorR_0.PosMode(6, 10, motorR_0_ORI-hip_roll[CntRoll%(2*unit_time)], 2);
+						usleep(usleep_time);
+						motorL_0_a.PosMode(1, 20, motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
+						usleep(usleep_time);
+						motorL_1_a.PosMode(1, 20, motorL_1_ORI_a+anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
+						usleep(usleep_time);
+						motorR_0_a.PosMode(1, 20, motorR_0_ORI_a+ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
+						usleep(usleep_time);
+						motorR_1_a.PosMode(1, 20, motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
 						CntRoll += 1;//这个增量不需要与CntPitch增量一致
 					}
 				}
-				motorL_0_a.PosMode(0.3, 10, motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
-				usleep(100);
-				motorL_1_a.PosMode(0.3, 10, motorL_1_ORI_a+anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
-				usleep(100);
-				motorR_0_a.PosMode(0.3, 10, motorR_0_ORI_a+ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
-				usleep(100);
-				motorR_1_a.PosMode(0.3, 10, motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
-				usleep(100);
-				motorR_2.PosMode(3, 1, motorR_2_ORI-right_kuan[CntPitch], 2);
-				usleep(100);
-				motorL_2.PosMode(3, 1, motorL_2_ORI+left_kuan[CntPitch], 1);
+				auto CurrentTime_before = std::chrono::system_clock::now();
+				auto currentTime_ms_before = std::chrono::time_point_cast<std::chrono::milliseconds>(CurrentTime_before);
+				auto value_ms_before = currentTime_ms_before.time_since_epoch().count();
+				// std::cout << "time_before:  " << value_ms_before << std::endl;
+
+				motorL_0_a.MixedMode(0,-V_LeftAnkle,motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],0.5, 20,  3);//之前刚度是1
+				// motorL_0_a.PosMode(0.6, 10, motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
+				usleep(usleep_time);
+				motorL_1_a.MixedMode(0,V_LeftAnkle,motorL_1_ORI_a+anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],0.5, 20,  3);
+				// motorL_1_a.PosMode(0.6, 10, motorL_1_ORI_a+anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
+				usleep(usleep_time);
+				motorR_0_a.MixedMode(0,V_RightAnkle,motorR_0_ORI_a+ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],0.5, 20,  4);
+				// motorR_0_a.PosMode(0.6, 10, motorR_0_ORI_a+ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
+				usleep(usleep_time);
+				motorR_1_a.MixedMode(0,-V_RightAnkle,motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],0.5, 20,  4);
+				// motorR_1_a.PosMode(0.6, 10, motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
+				usleep(usleep_time);
+
+				// motorR_2.PosMode(1, 10, motorR_2_ORI-right_kuan[CntPitch], 2);
+				motorR_2.MixedMode(0,-V_RightHip2,motorR_2_ORI-right_kuan[CntPitch],0.5, 30,  2);//之前刚度是3，阻尼是30
+				usleep(usleep_time);
+				// motorL_2.PosMode(1, 10, motorL_2_ORI+left_kuan[CntPitch], 1);
+				motorL_2.MixedMode(0,V_LeftHip2,motorL_2_ORI+left_kuan[CntPitch],0.5, 30,  1);
 				leg_flag_temp=1;
 			}
 
@@ -556,62 +648,121 @@ int main(int argc, char** argv)
 				{
 					for(int i=0;i<unit_time;i++)//每次走0.5个unit_time
 						{
-							motorL_0.PosMode(3, 1, motorL_0_ORI-hip_roll[CntRoll%(2*unit_time)], 1);//“加”为王梦迪的
-							usleep(2000);
-							motorR_0.PosMode(3, 1, motorR_0_ORI-hip_roll[CntRoll%(2*unit_time)], 2);
-							usleep(2000);
-							motorL_0_a.PosMode(0.3, 10, motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
-							usleep(100);
-							motorL_1_a.PosMode(0.3, 10, motorL_1_ORI_a+anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
-							usleep(100);
-							motorR_0_a.PosMode(0.3, 10, motorR_0_ORI_a+ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
-							usleep(100);
-							motorR_1_a.PosMode(0.3, 10, motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
+							motorL_0.PosMode(6, 10, motorL_0_ORI-hip_roll[CntRoll%(2*unit_time)], 1);//“加”为王梦迪的
+							usleep(usleep_time);
+							motorR_0.PosMode(6, 10, motorR_0_ORI-hip_roll[CntRoll%(2*unit_time)], 2);
+							usleep(usleep_time);
+							motorL_0_a.PosMode(1, 20, motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
+							usleep(usleep_time);
+							motorL_1_a.PosMode(1, 20, motorL_1_ORI_a+anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
+							usleep(usleep_time);
+							motorR_0_a.PosMode(1, 20, motorR_0_ORI_a+ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
+							usleep(usleep_time);
+							motorR_1_a.PosMode(1, 20, motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
 							CntRoll += 1;//这个增量不需要与CntPitch增量一致
 						}
 				}
-				motorL_0_a.PosMode(0.3, 10, motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
-				usleep(100);
-				motorL_1_a.PosMode(0.3, 10, motorL_1_ORI_a+anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
-				usleep(100);
-				motorR_0_a.PosMode(0.3, 10, motorR_0_ORI_a+ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
-				usleep(100);
-				motorR_1_a.PosMode(0.3, 10, motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
-				usleep(100);
-				motorR_2.PosMode(3, 1, motorR_2_ORI-right_kuan[CntPitch], 2);
-				usleep(100);
-				motorL_2.PosMode(3, 1, motorL_2_ORI+left_kuan[CntPitch], 1);
+				
+				// motorL_0_a.MixedMode(0,-V_LeftAnkle,motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],0.5, 20,  3);
+				motorL_0_a.PosMode(0.6, 10, motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
+				std::cout<<"L-0-A位置"<<motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)]<<endl;
+				usleep(usleep_time);
+				// motorL_1_a.MixedMode(0,V_LeftAnkle,motorL_1_ORI_a+anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],0.5, 20,  3);
+				motorL_1_a.PosMode(0.6, 10, motorL_1_ORI_a+anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
+
+				usleep(usleep_time);
+				// motorR_0_a.MixedMode(0,V_RightAnkle,motorR_0_ORI_a+ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],0.5, 20,  4);
+				motorR_0_a.PosMode(0.6, 10, motorR_0_ORI_a+ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
+				usleep(usleep_time);
+				// motorR_1_a.MixedMode(0,-V_RightAnkle,motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],0.5, 20,  4);
+				motorR_1_a.PosMode(0.6, 10, motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
+				usleep(usleep_time);
+				motorR_2.PosMode(0.5, 10, motorR_2_ORI-right_kuan[CntPitch], 2);
+				// motorR_2.MixedMode(0,-V_RightHip2,motorR_2_ORI-right_kuan[CntPitch],0.5, 30,  2);
+				usleep(usleep_time);
+				motorL_2.PosMode(0.5, 10, motorL_2_ORI+left_kuan[CntPitch], 1);
+				// motorL_2.MixedMode(0,V_LeftHip2,motorL_2_ORI+left_kuan[CntPitch],0.5, 30,  1);
 				leg_flag_temp=0;
 			}
-
-			if (CntPitch % 40 == 0 && CntPitch<number-40) 
+			if (CntPitch % 40 == 0) 
 			{	
-				TempCnt2 += 40;
+				if (CntPitch == number-38)
+					TempCnt2 = number;
+				else
+					TempCnt2 += 40;
+			}
+			std::cout << "TempCnt2:   " << TempCnt2 << std::endl;
+			left_leg.RelPos_Set(kneel[TempCnt2], 500);
+			usleep(usleep_time);
+			// std::cout << "右腿目标位置：  "<<kneer[cnt+30] <<  std::endl;
+			right_leg.RelPos_Set(kneer[TempCnt2], 500);
+			usleep(usleep_time);
+			CntPitch=CntPitch+8;
+
+			if (leg_flag==0 && ((CntPitch - 600) % 480 == 0))//刚刚迈的是左脚,且下一步要迈右脚
+			{
+				current_step++ ;//已经迈完一步，右脚、左脚各迈一步，才算完成一步
 			}
 
-			left_leg.RelPos_Set(kneel[TempCnt2], 2000);
-			usleep(200);
-			// std::cout << "右腿目标位置：  "<<kneer[cnt+30] <<  std::endl;
-			right_leg.RelPos_Set(kneer[TempCnt2], 2000);
-			usleep(200);
-			CntPitch=CntPitch+8;
+			if (current_step==total_steps)
+			{
+				left_leg.RelPos_Set(kneel[number], 200);
+				usleep(usleep_time);
+				// std::cout << "右腿目标位置：  "<<kneer[cnt+30] <<  std::endl;
+				right_leg.RelPos_Set(kneer[number], 200);
+				usleep(usleep_time);
+				// motorL_0_a.MixedMode(0,-V_LeftAnkle,motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],0.5, 20,  3);
+				motorL_0_a.PosMode(0.6, 10, motorL_0_ORI_a-anklel[number]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
+				std::cout<<"L-0-A位置"<<motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)]<<endl;
+				usleep(usleep_time);
+				// motorL_1_a.MixedMode(0,V_LeftAnkle,motorL_1_ORI_a+anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],0.5, 20,  3);
+				motorL_1_a.PosMode(0.6, 10, motorL_1_ORI_a+anklel[number]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
+
+				usleep(usleep_time);
+				// motorR_0_a.MixedMode(0,V_RightAnkle,motorR_0_ORI_a+ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],0.5, 20,  4);
+				motorR_0_a.PosMode(0.6, 10, motorR_0_ORI_a+ankler[number]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
+				usleep(usleep_time);
+				// motorR_1_a.MixedMode(0,-V_RightAnkle,motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],0.5, 20,  4);
+				motorR_1_a.PosMode(0.6, 10, motorR_1_ORI_a-ankler[number]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
+				usleep(usleep_time);
+				motorR_2.PosMode(1, 10, motorR_2_ORI-right_kuan[number], 2);
+				// motorR_2.MixedMode(0,-V_RightHip2,motorR_2_ORI-right_kuan[CntPitch],0.5, 30,  2);
+				usleep(usleep_time);
+				motorL_2.PosMode(1, 10, motorL_2_ORI+left_kuan[number], 1);
+				// motorL_2.MixedMode(0,V_LeftHip2,motorL_2_ORI+left_kuan[CntPitch],0.5, 30,  1);
+				leg_flag_temp=0;
+
+
+
+				std::cout<<"最后一步之前的CntPitch"<<CntPitch<<endl;
+				CntRoll=1.5*unit_time;//只走最后0.25个周期
+				std::cout<<"当前的CntRoll"<<CntRoll<<endl;
+				for(int i=0;i<0.5*unit_time;i++)//每次走0.5个unit_time
+					{
+						motorL_0.PosMode(5, 5, motorL_0_ORI-hip_roll[CntRoll%(2*unit_time)], 1);//“加”为王梦迪的
+						usleep(2000);
+						motorR_0.PosMode(5, 5, motorR_0_ORI-hip_roll[CntRoll%(2*unit_time)], 2);
+						usleep(2000);
+						motorL_0_a.PosMode(1, 20, motorL_0_ORI_a-anklel[CntPitch-8]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
+						usleep(2000);
+						motorL_1_a.PosMode(1, 20, motorL_1_ORI_a+anklel[CntPitch-8]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
+						usleep(2000);
+						motorR_0_a.PosMode(1, 20, motorR_0_ORI_a+ankler[CntPitch-8]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
+						usleep(2000);
+						motorR_1_a.PosMode(1, 20, motorR_1_ORI_a-ankler[CntPitch-8]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
+						CntRoll += 1;//这个增量不需要与CntPitch增量一致
+					}
+				return 0;
+			}
 		}
-		usleep(10000);
-		}
-// ros::Rate loop_rate(10); // 10Hz，周期为100ms
-}
+		usleep(usleep_time);
+		auto CurrentTime_after = std::chrono::system_clock::now();
+		auto currentTime_ms_after = std::chrono::time_point_cast<std::chrono::milliseconds>(CurrentTime_after);
+		auto value_ms_after = currentTime_ms_after.time_since_epoch().count();
+		// std::cout << "time_after:  " << value_ms_after << std::endl;
+	}
+	// ros::Rate loop_rate(10); // 10Hz，周期为100ms
 
-
-
-
-
-
-
-
-
-
-
-    
     // while(ros::ok())
     // {
 		// ROS_INFO("roll = %f pitch = %f yaw = %f",angular[0],angular[1],angular[2]);
@@ -630,6 +781,7 @@ int main(int argc, char** argv)
 	// 	ros::spinOnce();
     //     loop_rate.sleep();
     // }
+}
 
 
 void imu_feedback(sensor_msgs::Imu imu_data)
