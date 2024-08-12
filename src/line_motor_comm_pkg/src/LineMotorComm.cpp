@@ -125,6 +125,24 @@ bool readdata() {
     // }
 }
 
+// 函数来写入 q/dq 数据到 CSV 文件
+void writeToCSV(const std::string& filename, float data, string mark) {
+    std::ofstream file;
+
+    // 打开文件以追加模式
+    file.open(filename, std::ios::app);
+
+    if (!file.is_open()) {
+        std::cerr << "无法打开文件 " << filename << std::endl;
+        return;
+    }
+
+    // 将数据写入文件
+	file << data << mark;
+
+    file.close();
+}
+
 double angular[3];
 ros::Publisher linemotor_state_pub;
 
@@ -136,6 +154,7 @@ int8_t CanPort_Open(void);
 
 int main(int argc, char** argv)
 {	
+	string filename = "cur_data.csv";
 	//从文件中读数据
 	bool ret_readdata = readdata();
 	if (ret_readdata == false) {
@@ -508,6 +527,9 @@ int main(int argc, char** argv)
 
 
 	//以下为仲的侧摆分离步态，先侧摆到极值点再迈腿
+
+	std::vector<float> vel_hip_r_2, vel_hip_l_2, vel_ankle_l_0, vel_ankle_l_1, vel_ankle_r_0, vel_ankle_r_1;  
+
 	while(CntPitch < number)
 	{		
 		left_leg.Clear_PosCmd();
@@ -557,12 +579,12 @@ int main(int argc, char** argv)
 		//以下为迈步过程
 		if (hip_flag==1)
 		{
-			if (CntPitch<number-8)
+			if (CntPitch<number-1)
 			{
-				V_LeftHip2= (left_kuan[CntPitch+8]-left_kuan[CntPitch])/0.03;
-				V_RightHip2= (right_kuan[CntPitch+8]-right_kuan[CntPitch])/0.03;
-				V_LeftAnkle= (anklel[CntPitch+8]-anklel[CntPitch])/0.03;
-				V_RightAnkle= (ankler[CntPitch+8]-ankler[CntPitch])/0.03;
+				V_LeftHip2= (left_kuan[CntPitch+1]-left_kuan[CntPitch])/0.03;
+				V_RightHip2= (right_kuan[CntPitch+1]-right_kuan[CntPitch])/0.03;
+				V_LeftAnkle= (anklel[CntPitch+1]-anklel[CntPitch])/0.03;
+				V_RightAnkle= (ankler[CntPitch+1]-ankler[CntPitch])/0.03;
 			}
 			else 
 			{
@@ -592,9 +614,35 @@ int main(int argc, char** argv)
 						usleep(usleep_time);
 						motorR_1_a.PosMode(1, 20, motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
 						CntRoll += 1;//这个增量不需要与CntPitch增量一致
+
+						writeToCSV(filename, motorL_2_ORI+left_kuan[CntPitch], ",");
+						writeToCSV(filename, motorR_2_ORI-right_kuan[CntPitch], ",");
+						writeToCSV(filename, motorL_0_ORI-hip_roll[CntRoll%(2*unit_time)], ",");
+						writeToCSV(filename, motorR_0_ORI-hip_roll[CntRoll%(2*unit_time)], ",");
+						writeToCSV(filename, motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], ",");
+						writeToCSV(filename, motorL_1_ORI_a+anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], ",");
+						writeToCSV(filename, motorR_0_ORI_a+ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], ",");
+						writeToCSV(filename, motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], ",");
+						writeToCSV(filename, 0, ",");
+						writeToCSV(filename, 0, ",");
+						writeToCSV(filename, 0, ",");
+						writeToCSV(filename, 0, ",");
+
+						writeToCSV(filename, motorL_2.motor_ret.q / queryGearRatio(MotorType::B1), ",");
+						writeToCSV(filename, motorR_2.motor_ret.q / queryGearRatio(MotorType::B1), ",");
+						writeToCSV(filename, motorL_0_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+						writeToCSV(filename, motorL_1_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+						writeToCSV(filename, motorR_0_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+						writeToCSV(filename, motorR_1_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+						writeToCSV(filename, motorL_2.motor_ret.dq / queryGearRatio(MotorType::B1), ",");
+						writeToCSV(filename, motorR_2.motor_ret.dq / queryGearRatio(MotorType::B1), ",");
+						writeToCSV(filename, motorL_0_a.motor_ret.dq / queryGearRatio(MotorType::A1), ",");
+						writeToCSV(filename, motorL_1_a.motor_ret.dq / queryGearRatio(MotorType::A1), ",");
+						writeToCSV(filename, motorR_0_a.motor_ret.dq / queryGearRatio(MotorType::A1), ",");
+						writeToCSV(filename, motorR_1_a.motor_ret.dq / queryGearRatio(MotorType::A1), "\n");
 					}
-				first_step=1;
-				leg_flag_temp=1;
+					first_step=1;
+					leg_flag_temp=1;
 				}
 				if(leg_flag_temp != leg_flag)//当前循环中hil_flag发生变化
 				{
@@ -612,6 +660,32 @@ int main(int argc, char** argv)
 						usleep(usleep_time);
 						motorR_1_a.PosMode(1, 20, motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
 						CntRoll += 1;//这个增量不需要与CntPitch增量一致
+
+						writeToCSV(filename, motorL_2_ORI+left_kuan[CntPitch], ",");
+						writeToCSV(filename, motorR_2_ORI-right_kuan[CntPitch], ",");
+						writeToCSV(filename, motorL_0_ORI-hip_roll[CntRoll%(2*unit_time)], ",");
+						writeToCSV(filename, motorR_0_ORI-hip_roll[CntRoll%(2*unit_time)], ",");
+						writeToCSV(filename, motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], ",");
+						writeToCSV(filename, motorL_1_ORI_a+anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], ",");
+						writeToCSV(filename, motorR_0_ORI_a+ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], ",");
+						writeToCSV(filename, motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], ",");
+						writeToCSV(filename, 0, ",");
+						writeToCSV(filename, 0, ",");
+						writeToCSV(filename, 0, ",");
+						writeToCSV(filename, 0, ",");
+
+						writeToCSV(filename, motorL_2.motor_ret.q / queryGearRatio(MotorType::B1), ",");
+						writeToCSV(filename, motorR_2.motor_ret.q / queryGearRatio(MotorType::B1), ",");
+						writeToCSV(filename, motorL_0_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+						writeToCSV(filename, motorL_1_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+						writeToCSV(filename, motorR_0_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+						writeToCSV(filename, motorR_1_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+						writeToCSV(filename, motorL_2.motor_ret.dq / queryGearRatio(MotorType::B1), ",");
+						writeToCSV(filename, motorR_2.motor_ret.dq / queryGearRatio(MotorType::B1), ",");
+						writeToCSV(filename, motorL_0_a.motor_ret.dq / queryGearRatio(MotorType::A1), ",");
+						writeToCSV(filename, motorL_1_a.motor_ret.dq / queryGearRatio(MotorType::A1), ",");
+						writeToCSV(filename, motorR_0_a.motor_ret.dq / queryGearRatio(MotorType::A1), ",");
+						writeToCSV(filename, motorR_1_a.motor_ret.dq / queryGearRatio(MotorType::A1), "\n");
 					}
 				}
 				auto CurrentTime_before = std::chrono::system_clock::now();
@@ -619,25 +693,52 @@ int main(int argc, char** argv)
 				auto value_ms_before = currentTime_ms_before.time_since_epoch().count();
 				// std::cout << "time_before:  " << value_ms_before << std::endl;
 
-				motorL_0_a.MixedMode(0,-V_LeftAnkle,motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],0.5, 20,  3);//之前刚度是1
+//以下为迈腿，要调
+				motorL_0_a.MixedMode(0,-V_LeftAnkle,motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],1, 30,  3);//之前刚度是1,手扶稳定的刚度是0.5
 				// motorL_0_a.PosMode(0.6, 10, motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
 				usleep(usleep_time);
-				motorL_1_a.MixedMode(0,V_LeftAnkle,motorL_1_ORI_a+anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],0.5, 20,  3);
+				motorL_1_a.MixedMode(0,V_LeftAnkle,motorL_1_ORI_a+anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],1 ,30,  3);
 				// motorL_1_a.PosMode(0.6, 10, motorL_1_ORI_a+anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
 				usleep(usleep_time);
-				motorR_0_a.MixedMode(0,V_RightAnkle,motorR_0_ORI_a+ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],0.5, 20,  4);
+				motorR_0_a.MixedMode(0,V_RightAnkle,motorR_0_ORI_a+ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],1, 30,  4);
 				// motorR_0_a.PosMode(0.6, 10, motorR_0_ORI_a+ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
 				usleep(usleep_time);
-				motorR_1_a.MixedMode(0,-V_RightAnkle,motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],0.5, 20,  4);
+				motorR_1_a.MixedMode(0,-V_RightAnkle,motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],1, 30,  4);
 				// motorR_1_a.PosMode(0.6, 10, motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
 				usleep(usleep_time);
 
 				// motorR_2.PosMode(1, 10, motorR_2_ORI-right_kuan[CntPitch], 2);
-				motorR_2.MixedMode(0,-V_RightHip2,motorR_2_ORI-right_kuan[CntPitch],0.5, 30,  2);//之前刚度是3，阻尼是30
+				motorR_2.MixedMode(0,-V_RightHip2,motorR_2_ORI-right_kuan[CntPitch],3, 30,  2);//之前刚度是3，阻尼是30
 				usleep(usleep_time);
 				// motorL_2.PosMode(1, 10, motorL_2_ORI+left_kuan[CntPitch], 1);
-				motorL_2.MixedMode(0,V_LeftHip2,motorL_2_ORI+left_kuan[CntPitch],0.5, 30,  1);
+				motorL_2.MixedMode(0,V_LeftHip2,motorL_2_ORI+left_kuan[CntPitch],3, 30,  1);
 				leg_flag_temp=1;
+
+				writeToCSV(filename, motorL_2_ORI+left_kuan[CntPitch], ",");
+				writeToCSV(filename, motorR_2_ORI-right_kuan[CntPitch], ",");
+				writeToCSV(filename, motorL_0_ORI-hip_roll[CntRoll%(2*unit_time)], ",");
+				writeToCSV(filename, motorR_0_ORI-hip_roll[CntRoll%(2*unit_time)], ",");
+				writeToCSV(filename, motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], ",");
+				writeToCSV(filename, motorL_1_ORI_a+anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], ",");
+				writeToCSV(filename, motorR_0_ORI_a+ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], ",");
+				writeToCSV(filename, motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], ",");
+				writeToCSV(filename, V_LeftHip2, ",");
+				writeToCSV(filename, V_RightHip2, ",");
+				writeToCSV(filename, V_LeftAnkle, ",");
+				writeToCSV(filename, V_RightAnkle, ",");
+
+				writeToCSV(filename, motorL_2.motor_ret.q / queryGearRatio(MotorType::B1), ",");
+				writeToCSV(filename, motorR_2.motor_ret.q / queryGearRatio(MotorType::B1), ",");
+				writeToCSV(filename, motorL_0_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+				writeToCSV(filename, motorL_1_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+				writeToCSV(filename, motorR_0_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+				writeToCSV(filename, motorR_1_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+				writeToCSV(filename, motorL_2.motor_ret.dq / queryGearRatio(MotorType::B1), ",");
+				writeToCSV(filename, motorR_2.motor_ret.dq / queryGearRatio(MotorType::B1), ",");
+				writeToCSV(filename, motorL_0_a.motor_ret.dq / queryGearRatio(MotorType::A1), ",");
+				writeToCSV(filename, motorL_1_a.motor_ret.dq / queryGearRatio(MotorType::A1), ",");
+				writeToCSV(filename, motorR_0_a.motor_ret.dq / queryGearRatio(MotorType::A1), ",");
+				writeToCSV(filename, motorR_1_a.motor_ret.dq / queryGearRatio(MotorType::A1), "\n");
 			}
 
 			else if(turn_flag != 0 && turn_flag % 2 == 0) //迈左腿
@@ -660,36 +761,89 @@ int main(int argc, char** argv)
 							usleep(usleep_time);
 							motorR_1_a.PosMode(1, 20, motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
 							CntRoll += 1;//这个增量不需要与CntPitch增量一致
+
+							writeToCSV(filename, motorL_2_ORI+left_kuan[CntPitch], ",");
+							writeToCSV(filename, motorR_2_ORI-right_kuan[CntPitch], ",");
+							writeToCSV(filename, motorL_0_ORI-hip_roll[CntRoll%(2*unit_time)], ",");
+							writeToCSV(filename, motorR_0_ORI-hip_roll[CntRoll%(2*unit_time)], ",");
+							writeToCSV(filename, motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], ",");
+							writeToCSV(filename, motorL_1_ORI_a+anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], ",");
+							writeToCSV(filename, motorR_0_ORI_a+ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], ",");
+							writeToCSV(filename, motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], ",");
+							writeToCSV(filename, 0, ",");
+							writeToCSV(filename, 0, ",");
+							writeToCSV(filename, 0, ",");
+							writeToCSV(filename, 0, ",");
+
+							writeToCSV(filename, motorL_2.motor_ret.q / queryGearRatio(MotorType::B1), ",");
+							writeToCSV(filename, motorR_2.motor_ret.q / queryGearRatio(MotorType::B1), ",");
+							writeToCSV(filename, motorL_0_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+							writeToCSV(filename, motorL_1_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+							writeToCSV(filename, motorR_0_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+							writeToCSV(filename, motorR_1_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+							writeToCSV(filename, motorL_2.motor_ret.dq / queryGearRatio(MotorType::B1), ",");
+							writeToCSV(filename, motorR_2.motor_ret.dq / queryGearRatio(MotorType::B1), ",");
+							writeToCSV(filename, motorL_0_a.motor_ret.dq / queryGearRatio(MotorType::A1), ",");
+							writeToCSV(filename, motorL_1_a.motor_ret.dq / queryGearRatio(MotorType::A1), ",");
+							writeToCSV(filename, motorR_0_a.motor_ret.dq / queryGearRatio(MotorType::A1), ",");
+							writeToCSV(filename, motorR_1_a.motor_ret.dq / queryGearRatio(MotorType::A1), "\n");
 						}
 				}
 				
+//以下为迈腿，要调
 				// motorL_0_a.MixedMode(0,-V_LeftAnkle,motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],0.5, 20,  3);
-				motorL_0_a.PosMode(0.6, 10, motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
+				motorL_0_a.PosMode(1, 30, motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);//手扶用0.6
 				std::cout<<"L-0-A位置"<<motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)]<<endl;
 				usleep(usleep_time);
 				// motorL_1_a.MixedMode(0,V_LeftAnkle,motorL_1_ORI_a+anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],0.5, 20,  3);
-				motorL_1_a.PosMode(0.6, 10, motorL_1_ORI_a+anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
+				motorL_1_a.PosMode(1, 30, motorL_1_ORI_a+anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
 
 				usleep(usleep_time);
 				// motorR_0_a.MixedMode(0,V_RightAnkle,motorR_0_ORI_a+ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],0.5, 20,  4);
-				motorR_0_a.PosMode(0.6, 10, motorR_0_ORI_a+ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
+				motorR_0_a.PosMode(1, 30, motorR_0_ORI_a+ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
 				usleep(usleep_time);
 				// motorR_1_a.MixedMode(0,-V_RightAnkle,motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],0.5, 20,  4);
-				motorR_1_a.PosMode(0.6, 10, motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
+				motorR_1_a.PosMode(1, 30, motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
 				usleep(usleep_time);
-				motorR_2.PosMode(0.5, 10, motorR_2_ORI-right_kuan[CntPitch], 2);
+				motorR_2.PosMode(3, 30, motorR_2_ORI-right_kuan[CntPitch], 2);//手扶用0.5
 				// motorR_2.MixedMode(0,-V_RightHip2,motorR_2_ORI-right_kuan[CntPitch],0.5, 30,  2);
 				usleep(usleep_time);
-				motorL_2.PosMode(0.5, 10, motorL_2_ORI+left_kuan[CntPitch], 1);
+				motorL_2.PosMode(3, 30, motorL_2_ORI+left_kuan[CntPitch], 1);
 				// motorL_2.MixedMode(0,V_LeftHip2,motorL_2_ORI+left_kuan[CntPitch],0.5, 30,  1);
 				leg_flag_temp=0;
+
+				writeToCSV(filename, motorL_2_ORI+left_kuan[CntPitch], ",");
+				writeToCSV(filename, motorR_2_ORI-right_kuan[CntPitch], ",");
+				writeToCSV(filename, motorL_0_ORI-hip_roll[CntRoll%(2*unit_time)], ",");
+				writeToCSV(filename, motorR_0_ORI-hip_roll[CntRoll%(2*unit_time)], ",");
+				writeToCSV(filename, motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], ",");
+				writeToCSV(filename, motorL_1_ORI_a+anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], ",");
+				writeToCSV(filename, motorR_0_ORI_a+ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], ",");
+				writeToCSV(filename, motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], ",");
+				writeToCSV(filename, V_LeftHip2, ",");
+				writeToCSV(filename, V_RightHip2, ",");
+				writeToCSV(filename, V_LeftAnkle, ",");
+				writeToCSV(filename, V_RightAnkle, ",");
+
+				writeToCSV(filename, motorL_2.motor_ret.q / queryGearRatio(MotorType::B1), ",");
+				writeToCSV(filename, motorR_2.motor_ret.q / queryGearRatio(MotorType::B1), ",");
+				writeToCSV(filename, motorL_0_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+				writeToCSV(filename, motorL_1_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+				writeToCSV(filename, motorR_0_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+				writeToCSV(filename, motorR_1_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+				writeToCSV(filename, motorL_2.motor_ret.dq / queryGearRatio(MotorType::B1), ",");
+				writeToCSV(filename, motorR_2.motor_ret.dq / queryGearRatio(MotorType::B1), ",");
+				writeToCSV(filename, motorL_0_a.motor_ret.dq / queryGearRatio(MotorType::A1), ",");
+				writeToCSV(filename, motorL_1_a.motor_ret.dq / queryGearRatio(MotorType::A1), ",");
+				writeToCSV(filename, motorR_0_a.motor_ret.dq / queryGearRatio(MotorType::A1), ",");
+				writeToCSV(filename, motorR_1_a.motor_ret.dq / queryGearRatio(MotorType::A1), "\n");
 			}
-			if (CntPitch % 40 == 0) 
+			if (CntPitch % 5 == 0) 
 			{	
 				if (CntPitch == number-38)
 					TempCnt2 = number;
 				else
-					TempCnt2 += 40;
+					TempCnt2 += 5;
 			}
 			std::cout << "TempCnt2:   " << TempCnt2 << std::endl;
 			left_leg.RelPos_Set(kneel[TempCnt2], 500);
@@ -697,7 +851,7 @@ int main(int argc, char** argv)
 			// std::cout << "右腿目标位置：  "<<kneer[cnt+30] <<  std::endl;
 			right_leg.RelPos_Set(kneer[TempCnt2], 500);
 			usleep(usleep_time);
-			CntPitch=CntPitch+8;
+			CntPitch=CntPitch+1;
 
 			if (leg_flag==0 && ((CntPitch - 600) % 480 == 0))//刚刚迈的是左脚,且下一步要迈右脚
 			{
@@ -712,23 +866,23 @@ int main(int argc, char** argv)
 				right_leg.RelPos_Set(kneer[number], 200);
 				usleep(usleep_time);
 				// motorL_0_a.MixedMode(0,-V_LeftAnkle,motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],0.5, 20,  3);
-				motorL_0_a.PosMode(0.6, 10, motorL_0_ORI_a-anklel[number]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
+				motorL_0_a.PosMode(1, 30, motorL_0_ORI_a-anklel[number]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
 				std::cout<<"L-0-A位置"<<motorL_0_ORI_a-anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)]<<endl;
 				usleep(usleep_time);
 				// motorL_1_a.MixedMode(0,V_LeftAnkle,motorL_1_ORI_a+anklel[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],0.5, 20,  3);
-				motorL_1_a.PosMode(0.6, 10, motorL_1_ORI_a+anklel[number]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
+				motorL_1_a.PosMode(1, 30, motorL_1_ORI_a+anklel[number]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 3);
 
 				usleep(usleep_time);
 				// motorR_0_a.MixedMode(0,V_RightAnkle,motorR_0_ORI_a+ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],0.5, 20,  4);
-				motorR_0_a.PosMode(0.6, 10, motorR_0_ORI_a+ankler[number]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
+				motorR_0_a.PosMode(1, 30, motorR_0_ORI_a+ankler[number]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
 				usleep(usleep_time);
 				// motorR_1_a.MixedMode(0,-V_RightAnkle,motorR_1_ORI_a-ankler[CntPitch]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)],0.5, 20,  4);
-				motorR_1_a.PosMode(0.6, 10, motorR_1_ORI_a-ankler[number]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
+				motorR_1_a.PosMode(1, 30, motorR_1_ORI_a-ankler[number]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
 				usleep(usleep_time);
-				motorR_2.PosMode(1, 10, motorR_2_ORI-right_kuan[number], 2);
+				motorR_2.PosMode(3, 30, motorR_2_ORI-right_kuan[number], 2);
 				// motorR_2.MixedMode(0,-V_RightHip2,motorR_2_ORI-right_kuan[CntPitch],0.5, 30,  2);
 				usleep(usleep_time);
-				motorL_2.PosMode(1, 10, motorL_2_ORI+left_kuan[number], 1);
+				motorL_2.PosMode(3, 30, motorL_2_ORI+left_kuan[number], 1);
 				// motorL_2.MixedMode(0,V_LeftHip2,motorL_2_ORI+left_kuan[CntPitch],0.5, 30,  1);
 				leg_flag_temp=0;
 
@@ -751,6 +905,32 @@ int main(int argc, char** argv)
 						usleep(2000);
 						motorR_1_a.PosMode(1, 20, motorR_1_ORI_a-ankler[CntPitch-8]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], 4);
 						CntRoll += 1;//这个增量不需要与CntPitch增量一致
+
+						writeToCSV(filename, motorL_2_ORI+left_kuan[number], ",");
+						writeToCSV(filename, motorR_2_ORI-right_kuan[number], ",");
+						writeToCSV(filename, motorL_0_ORI-hip_roll[CntRoll%(2*unit_time)], ",");
+						writeToCSV(filename, motorR_0_ORI-hip_roll[CntRoll%(2*unit_time)], ",");
+						writeToCSV(filename, motorL_0_ORI_a-anklel[CntPitch-8]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], ",");
+						writeToCSV(filename, motorL_1_ORI_a+anklel[CntPitch-8]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], ",");
+						writeToCSV(filename, motorR_0_ORI_a+ankler[CntPitch-8]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], ",");
+						writeToCSV(filename, motorR_1_ORI_a-ankler[CntPitch-8]+k_ankle_hip_roll*hip_roll[CntRoll%(2*unit_time)], ",");
+						writeToCSV(filename, 0, ",");
+						writeToCSV(filename, 0, ",");
+						writeToCSV(filename, 0, ",");
+						writeToCSV(filename, 0, ",");
+
+						writeToCSV(filename, motorL_2.motor_ret.q / queryGearRatio(MotorType::B1), ",");
+						writeToCSV(filename, motorR_2.motor_ret.q / queryGearRatio(MotorType::B1), ",");
+						writeToCSV(filename, motorL_0_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+						writeToCSV(filename, motorL_1_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+						writeToCSV(filename, motorR_0_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+						writeToCSV(filename, motorR_1_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+						writeToCSV(filename, motorL_2.motor_ret.dq / queryGearRatio(MotorType::B1), ",");
+						writeToCSV(filename, motorR_2.motor_ret.dq / queryGearRatio(MotorType::B1), ",");
+						writeToCSV(filename, motorL_0_a.motor_ret.dq / queryGearRatio(MotorType::A1), ",");
+						writeToCSV(filename, motorL_1_a.motor_ret.dq / queryGearRatio(MotorType::A1), ",");
+						writeToCSV(filename, motorR_0_a.motor_ret.dq / queryGearRatio(MotorType::A1), ",");
+						writeToCSV(filename, motorR_1_a.motor_ret.dq / queryGearRatio(MotorType::A1), "\n");
 					}
 				return 0;
 			}
@@ -760,6 +940,27 @@ int main(int argc, char** argv)
 		auto currentTime_ms_after = std::chrono::time_point_cast<std::chrono::milliseconds>(CurrentTime_after);
 		auto value_ms_after = currentTime_ms_after.time_since_epoch().count();
 		// std::cout << "time_after:  " << value_ms_after << std::endl;
+
+		// vel_hip_r_2.push_back(motorL_2.motor_ret.q / queryGearRatio(MotorType::B1));
+		// vel_hip_l_2.push_back(motorR_2.motor_ret.q / queryGearRatio(MotorType::B1));
+		// vel_ankle_l_0.push_back(motorL_0_a.motor_ret.q / queryGearRatio(MotorType::A1));
+		// vel_ankle_l_1.push_back(motorL_1_a.motor_ret.q / queryGearRatio(MotorType::A1));
+		// vel_ankle_r_0.push_back(motorR_0_a.motor_ret.q / queryGearRatio(MotorType::A1));
+		// vel_ankle_r_1.push_back(motorR_1_a.motor_ret.q / queryGearRatio(MotorType::A1));
+		// writeToCSV(filename, motorL_2.motor_ret.q / queryGearRatio(MotorType::B1), ",");
+		// writeToCSV(filename, motorR_2.motor_ret.q / queryGearRatio(MotorType::B1), ",");
+		// writeToCSV(filename, motorL_0_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+		// writeToCSV(filename, motorL_1_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+		// writeToCSV(filename, motorR_0_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+		// writeToCSV(filename, motorR_1_a.motor_ret.q / queryGearRatio(MotorType::A1), ",");
+		// writeToCSV(filename, motorL_2.motor_ret.dq / queryGearRatio(MotorType::B1), ",");
+		// writeToCSV(filename, motorR_2.motor_ret.dq / queryGearRatio(MotorType::B1), ",");
+		// writeToCSV(filename, motorL_0_a.motor_ret.dq / queryGearRatio(MotorType::A1), ",");
+		// writeToCSV(filename, motorL_1_a.motor_ret.dq / queryGearRatio(MotorType::A1), ",");
+		// writeToCSV(filename, motorR_0_a.motor_ret.dq / queryGearRatio(MotorType::A1), ",");
+		// writeToCSV(filename, motorR_1_a.motor_ret.dq / queryGearRatio(MotorType::A1), "\n");
+		
+		
 	}
 	// ros::Rate loop_rate(10); // 10Hz，周期为100ms
 
