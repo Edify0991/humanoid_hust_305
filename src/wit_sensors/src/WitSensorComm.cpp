@@ -90,6 +90,14 @@ int main(int argc, char** argv)
             ROS_INFO("pitch:%f",angular[1]);
             ROS_INFO("yaw:%f",angular[2]);
 
+            ROS_INFO("roll_vel:%f",angular_vel[0]);
+            ROS_INFO("pitch_vel:%f",angular_vel[1]);
+            ROS_INFO("yaw_vel:%f",angular_vel[2]);
+
+            ROS_INFO("mag_x:%f",magnetometer[0]);
+            ROS_INFO("mag_y:%f",magnetometer[1]);
+            ROS_INFO("mag_z:%f",magnetometer[2]);
+
             ROS_INFO("accx:%f",imu_msg.linear_acceleration.x);
             ROS_INFO("accy:%f",imu_msg.linear_acceleration.y);
             ROS_INFO("accz:%f",imu_msg.linear_acceleration.z);

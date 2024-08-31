@@ -24,9 +24,9 @@ using namespace std;
  * 函数输入：addr - 驱动器在总线上的地址
  * 函数返回：None
  */
-LineMotor::LineMotor(uint8_t addr)
+LineMotor::LineMotor(uint8_t addr, int CANIndex): addr_BUS(addr), CANIndex(CANIndex)
 {
-    addr_BUS = addr;
+    // addr_BUS = addr;
 
     //开启CAN通信
     uint8_t open_signal = DRIVER_OpenCanComm();
@@ -76,7 +76,7 @@ LineMotor::LineMotor(uint8_t addr)
     for(int i = 0; i < 7; i++)
     {
         array_copy(sendTodriver_msg.Data, temp_data[i], 8);
-        VCI_Transmit(VCI_USBCAN2, 0, 0, &sendTodriver_msg, 1);
+        VCI_Transmit(VCI_USBCAN2, 0, CANIndex, &sendTodriver_msg, 1);
         usleep(10000);
     }
 
@@ -94,7 +94,7 @@ LineMotor::LineMotor(uint8_t addr)
     for(int i = 0; i < 7; i++)
     {
         array_copy(sendTodriver_msg.Data, temp_data_5[i], 8);
-        VCI_Transmit(VCI_USBCAN2, 0, 0, &sendTodriver_msg, 1);
+        VCI_Transmit(VCI_USBCAN2, 0, CANIndex, &sendTodriver_msg, 1);
         usleep(10000);
     }
 
@@ -105,7 +105,7 @@ LineMotor::LineMotor(uint8_t addr)
     uint8_t temp_data_2[9][8] = {{0x23, 0x00, 0x18, 0x01, Tx_COB_ID_L, Tx_COB_ID_H, 0x00, 0x80},       // 0x1800-01h:TPDO1的COB-ID
                                 {0x2F, 0x00, 0x18, 0x02, 0xff, 0x00, 0x00, 0x00},                      // 0xff:映射数据发生改变或者事件计时器到达则发送该TPDO
                                 {0x2B, 0x00, 0x18, 0x03, 0x00, 0x00, 0x00, 0x00},                      // 0x2B:Data为2Byte 0x1800-03h:设置TPDO静止时间，单位为100us，同一个TPDO传输时间间隔不得小于该参数对应的禁止时间
-                                {0x2B, 0x00, 0x18, 0x05, 0x32, 0x00, 0x00, 0x00},                      // 0x1800-05h:定义事件计时器，单位ms，这里为50ms
+                                {0x2B, 0x00, 0x18, 0x05, 0x02, 0x00, 0x00, 0x00},                      // 0x1800-05h:定义事件计时器，单位ms，这里为50ms
                                 {0x2F, 0x00, 0x1A, 0x00, 0x00, 0x00, 0x00, 0x00},                      // 0x1A00h:TPDO1映射对象
                                 {0x23, 0x00, 0x1A, 0x01, 0x10, 0x00, 0x41, 0x60},                      // 0x6041h:状态字
                                 {0x23, 0x00, 0x1A, 0x02, 0x20, 0x00, 0x64, 0x60},                      // 0x6064h:位置反馈，反映实时用户绝对位置反馈(指令单位)，用户位置反馈(6064h )× 齿轮比(6091h) = 电机位置反馈(6063h)
@@ -116,7 +116,7 @@ LineMotor::LineMotor(uint8_t addr)
     for(int i = 0; i < 9; i++)
     {
         array_copy(sendTodriver_msg.Data, temp_data_2[i], 8);
-        VCI_Transmit(VCI_USBCAN2, 0, 0, &sendTodriver_msg, 1);
+        VCI_Transmit(VCI_USBCAN2, 0, CANIndex, &sendTodriver_msg, 1);
         usleep(10000);
     }
 
@@ -135,18 +135,18 @@ LineMotor::LineMotor(uint8_t addr)
     for(int i = 0; i < 2; i++)
     {
         array_copy(sendTodriver_msg.Data, GearRation[i], 8);
-        VCI_Transmit(VCI_USBCAN2, 0, 0, &sendTodriver_msg, 1);
+        VCI_Transmit(VCI_USBCAN2, 0, CANIndex, &sendTodriver_msg, 1);
         usleep(10000);
     }
     //配置轮廓加速度和减速度
     // 额定速度下是0x57e4,但进行小段位移时加减速度过于大，易振荡
     uint8_t Acc_Dec[2][8] = {{0x23,0x83,0x60,0x00,0xe4,0x30,0x00,0x00},\
-                              {0x23,0x84,0x60,0x00,0xe4,0x30,0x00,0x00}};
+                              {0x23,0x84,0x60,0x00,0xe4,0x30,0x00,0x00}};//加速度为30e4，由两位地址决定
     sendTodriver_msg.ID = Sdo_COB_ID;
     for(int i = 0; i < 2; i++)
     {
         array_copy(sendTodriver_msg.Data, Acc_Dec[i], 8);
-        VCI_Transmit(VCI_USBCAN2, 0, 0, &sendTodriver_msg, 1);
+        VCI_Transmit(VCI_USBCAN2, 0, CANIndex, &sendTodriver_msg, 1);
         usleep(10000);
     }
     // 设置回零快速度和慢速度
@@ -157,11 +157,11 @@ LineMotor::LineMotor(uint8_t addr)
     for(int i = 0; i < 2; i++)
     {
         array_copy(sendTodriver_msg.Data, Zero_Acc_Dec[i], 8);
-        VCI_Transmit(VCI_USBCAN2, 0, 0, &sendTodriver_msg, 1);
+        VCI_Transmit(VCI_USBCAN2, 0, CANIndex, &sendTodriver_msg, 1);
         usleep(10000);
     }
     // 开启NMT 操作模式
-    // NMT_Enable(addr);
+    NMT_Enable(addr);
 }
 /*
  * 函数名称：DRIVER_OpenCanComm
@@ -179,12 +179,12 @@ int8_t LineMotor::DRIVER_OpenCanComm(void)
     motor_can_config.Timing0 = 0x00;                                // Timing0 = 0x00, Timing1 = 0x1C
     motor_can_config.Timing1 = 0x14;                                // 1M bps 波特率
     motor_can_config.Mode = 0;                                      // 正常收发模式
-    if(VCI_InitCAN(VCI_USBCAN2, 0, 0, &motor_can_config) != 1)
+    if(VCI_InitCAN(VCI_USBCAN2, 0, CANIndex, &motor_can_config) != 1)
     {
         ROS_ERROR_STREAM(">>CAN initialization failed!");
         return 0;
     }
-    if(VCI_StartCAN(VCI_USBCAN2, 0, 0)!=1)
+    if(VCI_StartCAN(VCI_USBCAN2, 0, CANIndex)!=1)
     {
         ROS_ERROR_STREAM(">>Starting CAN failed!");
         return 0;
@@ -206,7 +206,7 @@ void LineMotor::QuickStop(void)
     for(int i = 0; i < 2; i++)
     {
         array_copy(sendTodriver_msg.Data, temp_data[i], 8);
-        VCI_Transmit(VCI_USBCAN2, 0, 0, &sendTodriver_msg, 1);
+        VCI_Transmit(VCI_USBCAN2, 0, CANIndex, &sendTodriver_msg, 1);
         usleep(10000);
     }
 }
@@ -223,10 +223,12 @@ void LineMotor::DrvEnable(void)
                                 {0x2b,0x40,0x60,0x00,0x0f,0x00,0x00,0x00},\
                                 };
     sendTodriver_msg.ID = Sdo_COB_ID;
+    std::cout << "sdo id" << std::endl;
     for(int i = 0; i < 3; i++)
     {
+        
         array_copy(sendTodriver_msg.Data, temp_data[i], 8);
-        VCI_Transmit(VCI_USBCAN2, 0, 0, &sendTodriver_msg, 1);
+        VCI_Transmit(VCI_USBCAN2, 0, CANIndex, &sendTodriver_msg, 1);
         usleep(10000);
     }
 }
@@ -245,7 +247,7 @@ void LineMotor::DrvDisable(void)
     for(int i = 0; i < 2; i++)
     {
         array_copy(sendTodriver_msg.Data, temp_data[i], 8);
-        VCI_Transmit(VCI_USBCAN2, 0, 0, &sendTodriver_msg, 1);
+        VCI_Transmit(VCI_USBCAN2, 0, CANIndex, &sendTodriver_msg, 1);
         usleep(10000);
     }
 }
@@ -261,13 +263,13 @@ void LineMotor::DrvReset(void)
     for(int i = 0; i < 3; i++)
     {
         array_copy(sendTodriver_msg.Data, temp_data[i], 8);
-        VCI_Transmit(VCI_USBCAN2, 0, 0, &sendTodriver_msg, 1);
+        VCI_Transmit(VCI_USBCAN2, 0, CANIndex, &sendTodriver_msg, 1);
         usleep(80000);
     }
     // 设置控制字 
     uint8_t temp_data_3[8] = {0x2b,0x40,0x60,0x00,0x7f,0x00,0x00,0x00};
     array_copy(sendTodriver_msg.Data, temp_data_3, 8);
-    VCI_Transmit(VCI_USBCAN2, 0, 0, &sendTodriver_msg, 1);
+    VCI_Transmit(VCI_USBCAN2, 0, CANIndex, &sendTodriver_msg, 1);
     usleep(80000);
 }
 /*
@@ -324,14 +326,14 @@ void LineMotor::RelPos_Set(float relPos, uint32_t refSpeed)
     // 先设置轮廓速度和目标位置
     sendtoDrv.ID = RPdo1_COB_ID;
     array_copy(sendtoDrv.Data, &temp_data_1[0], 8);
-    VCI_Transmit(VCI_USBCAN2, 0, 0, &sendtoDrv, 1);
-    usleep(2000); // 1ms
+    VCI_Transmit(VCI_USBCAN2, 0, CANIndex, &sendtoDrv, 1);
+    // usleep(100); // 1ms
     // 再设置控制字和控制模式
     sendtoDrv2.ID = RPdo2_COB_ID;
     array_copy(sendtoDrv2.Data, &temp_data_2[0], 3);
-    VCI_Transmit(VCI_USBCAN2, 0, 0, &sendtoDrv2, 1);
-    usleep(2000); // 1ms
-    cout<<"已发送，控制量为： "<<relPos<<endl;
+    VCI_Transmit(VCI_USBCAN2, 0, CANIndex, &sendtoDrv2, 1);
+    // usleep(2000); // 1ms
+    // cout<<"已发送，控制量为： "<<relPos<<endl;
 }
 void LineMotor::Clear_PosCmd(void)
 {
@@ -340,8 +342,8 @@ void LineMotor::Clear_PosCmd(void)
     sendTodriver_msg.ID = Sdo_COB_ID;
 
     array_copy(sendTodriver_msg.Data, &cmd[0], 8);
-    VCI_Transmit(VCI_USBCAN2, 0, 0, &sendTodriver_msg, 1);
-    usleep(2000);
+    VCI_Transmit(VCI_USBCAN2, 0, CANIndex, &sendTodriver_msg, 1);
+    // usleep(2000);
 }
 
 void LineMotor::DrvPosMode(void)
@@ -355,7 +357,7 @@ void LineMotor::DrvPosMode(void)
     sendtoDrv2.ID = RPdo2_COB_ID;
     uint8_t temp_data_2[3] = {0x01,0x2f,0x00};      // 0x01,0x0f,0x00
     array_copy(sendtoDrv2.Data, &temp_data_2[0], 3);
-    VCI_Transmit(VCI_USBCAN2, 0, 0, &sendtoDrv2, 1);
+    VCI_Transmit(VCI_USBCAN2, 0, CANIndex, &sendtoDrv2, 1);
     usleep(2000); // 1ms
 }
 /*
@@ -369,7 +371,7 @@ void LineMotor::Gozero_Fdb(void)
     uint8_t cmd[8] = {0x40,0x41,0x60,0x00,0x00,0x00,0x00,0x00};
     sendTodriver_msg.ID = Sdo_COB_ID;
     array_copy(sendTodriver_msg.Data, &cmd[0], 8);
-    VCI_Transmit(VCI_USBCAN2, 0, 0, &sendTodriver_msg, 1);
+    VCI_Transmit(VCI_USBCAN2, 0, CANIndex, &sendTodriver_msg, 1);
     usleep(1000);
 }
 /*
@@ -391,7 +393,7 @@ void LineMotor::NMT_Enable(uint8_t addr)
 
     uint8_t data[2] = {0x01,addr};
     array_copy(sendtoDrv.Data, &data[0], 2);
-    VCI_Transmit(VCI_USBCAN2, 0, 0, &sendtoDrv, 1);
+    VCI_Transmit(VCI_USBCAN2, 0, CANIndex, &sendtoDrv, 1);
     usleep(10000);
 }
 /*

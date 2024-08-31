@@ -377,32 +377,82 @@ int main(int argc,char **argv)
 	motor_ready(parall_8_motor);
 	
 	
-	parall_3_motor.speed=parall_4_motor.speed=parall_5_motor.speed=parall_6_motor.speed=parall_7_motor.speed=parall_8_motor.speed=5*5000;
+	parall_3_motor.speed=parall_4_motor.speed=parall_5_motor.speed=parall_6_motor.speed=parall_7_motor.speed=parall_8_motor.speed=15*5000;
 	parall_3_motor.acceleration=parall_4_motor.acceleration=parall_5_motor.acceleration=parall_6_motor.acceleration=parall_7_motor.acceleration=parall_8_motor.acceleration=50*5000;
 	parall_3_motor.mode=parall_4_motor.mode=parall_5_motor.mode=parall_6_motor.mode=parall_7_motor.mode=parall_8_motor.mode=4;
 	int action=1;
 	action=1;
 	sleep(1);
+	double pos_abs1 = 5;
+	double pos_abs2 = 10;
+	double pos_abs3 = 10;
 	while (action)
 	{
-    std::cout<<"Type absolute position information 1 and enter"<<std::endl;
-    double pos_abs1;
-    std::cin>>pos_abs1;
-	std::cout<<"Type absolute position information 2 and enter"<<std::endl;
-    double pos_abs2;
-    std::cin>>pos_abs2;
-	std::cout<<"Type absolute position information 3 and enter"<<std::endl;
-    double pos_abs3;
-    std::cin>>pos_abs3;
-    std::cout<<"Do you want to continue ?"<<std::endl;
+	std::cout<<"Do you want to continue ?"<<std::endl;
     std::cin>>action;
-	parall_3_motor.displacement=pos_abs1*5000;
-	single_motor_drive(parall_3_motor);
-	parall_4_motor.displacement=pos_abs2*5000;
-	single_motor_drive(parall_4_motor);
-	parall_5_motor.displacement=pos_abs3*5000;
-	single_motor_drive(parall_5_motor);
+     /*std::cout<<"Type absolute position information 1 and enter"<<std::endl;
+     double pos_abs1;
+     std::cin>>pos_abs1;
+	 std::cout<<"Type absolute position information 2 and enter"<<std::endl;
+     double pos_abs2;
+     std::cin>>pos_abs2;
+	 std::cout<<"Type absolute position information 3 and enter"<<std::endl;
+     double pos_abs3;
+     std::cin>>pos_abs3;
+     std::cout<<"Do you want to continue ?"<<std::endl;
+     std::cin>>action;*/
+	parall_6_motor.displacement=pos_abs1*5000;
+	single_motor_drive(parall_6_motor);
+	parall_7_motor.displacement=pos_abs2*5000;
+	single_motor_drive(parall_7_motor);
+	parall_8_motor.displacement=pos_abs3*5000;
+	single_motor_drive(parall_8_motor);
 	}
+	bool restart=1;
+	while (restart)
+	{
+	std::cout<<"start ?"<<std::endl;
+    std::cin>>restart;
+	double a=10,b=20,c=30,a1=1,b1=1,c1=1;
+	parall_3_motor.speed=parall_4_motor.speed=parall_5_motor.speed=parall_6_motor.speed=parall_7_motor.speed=parall_8_motor.speed=15*5000;
+	parall_6_motor.displacement=a*5000;
+	single_motor_drive(parall_6_motor);
+	parall_7_motor.displacement=b*5000;
+	single_motor_drive(parall_7_motor);
+	parall_8_motor.displacement=c*5000;
+	single_motor_drive(parall_8_motor);
+	sleep(3);
+	for(int i=0;i<100;i++){
+	parall_3_motor.speed=parall_4_motor.speed=parall_5_motor.speed=parall_6_motor.speed=parall_7_motor.speed=parall_8_motor.speed=5*5000;
+	a=a+0.5*a1;
+	b=b+0.5*b1;
+	c=c+0.5*c1;
+	if(a>=31||a<=9){
+		a1=-1*a1;
+	}
+	if(b>=31||b<=9){
+		b1=-1*b1;
+	}
+	if(c>=31||c<=9){
+		c1=-1*c1;
+	}
+	parall_6_motor.displacement=a*5000;
+	single_motor_drive(parall_6_motor);
+	parall_7_motor.displacement=b*5000;
+	single_motor_drive(parall_7_motor);
+	parall_8_motor.displacement=c*5000;
+	single_motor_drive(parall_8_motor);
+	usleep(50000);
+	}
+	parall_6_motor.displacement=0;
+	single_motor_drive(parall_6_motor);
+	parall_7_motor.displacement=0;
+	single_motor_drive(parall_7_motor);
+	parall_8_motor.displacement=0;
+	single_motor_drive(parall_8_motor);
+	usleep(10000);
+	}
+	
 	/*
 	axisx_motor.mode=4;
 	axisy_motor.mode=4;

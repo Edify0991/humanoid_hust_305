@@ -6,11 +6,11 @@ WitSensor::WitSensor()
 {
     data_ready = 0;
     serial::Timeout _time =serial::Timeout::simpleTimeout(2000); 
-    serial_port.setPort("/dev/ttyUSB0");
+    serial_port.setPort("/dev/usb_imu");
     serial_port.open();
     if(serial_port.isOpen())
     {
-        serial_port.setBaudrate(9600);
+        serial_port.setBaudrate(115200);
         serial_port.setStopbits(serial::stopbits_one);
         serial_port.setParity(serial::parity_none);
         serial_port.setTimeout(_time);

@@ -1,31 +1,17 @@
 #include <unistd.h>
-#include "serialPort/SerialPort.h"
+// #include "serialPort/SerialPort.h"
 #include "unitreeMotor/unitreeMotor.h"
 #include "B1MotorControl.h"
 
-
-// 启用串口前需在B1MotorControl.h文件中取消相应宏定义的注释
-#ifdef TTYUSB0
-SerialPort  left_leg_b1("/dev/usb_hip_left");
-#endif
-
-#ifdef TTYUSB1
-SerialPort  right_leg_b1("/dev/usb_hip_right");
-#endif
-
-#ifdef TTYUSB2
-SerialPort  left_leg_a1("/dev/usb_ankle_left");
-#endif
-
-#ifdef TTYUSB3
-SerialPort  right_leg_a1("/dev/usb_ankle_right");
-#endif
-
-JointMotor::JointMotor(unsigned short motorID, MotorType motorType)
+JointMotor::JointMotor(unsigned short motorID, MotorType motorType, ros::NodeHandle nh, std::string motor_name)
 {
+    this->nh = nh;
+    this->motor_name = motor_name;
     motor_cmd.id = motorID;
     motor_cmd.motorType = motorType;
     motor_ret.motorType = motorType;
+    motor_cmd_pub = nh.advertise<line_motor_comm_pkg::motorMsgCmd>(motor_name + "_cmd", 1);
+    motor_state_sub = nh.subscribe(motor_name + "_state", 1, &JointMotor::MotorStateCallback, this);
 }
 /*
  * 函数名称：BrakMode
@@ -40,32 +26,12 @@ JointMotor::JointMotor(unsigned short motorID, MotorType motorType)
 void JointMotor::BrakMode(uint8_t serialport)
 {
     motor_cmd.mode = queryMotorMode(motor_cmd.motorType, MotorMode::BRAKE);
-    switch(serialport)
-    {
-        #ifdef TTYUSB0
-        case LEFT_LEG_B1:
-            left_leg_b1.sendRecv(&motor_cmd, &motor_ret);
-            break;
-        #endif 
-
-        #ifdef TTYUSB1
-        case RIGHT_LEG_B1:
-            right_leg_b1.sendRecv(&motor_cmd, &motor_ret);
-            break;
-        #endif
-
-        #ifdef TTYUSB2
-        case LEFT_LEG_A1:
-            left_leg_a1.sendRecv(&motor_cmd, &motor_ret);
-            break;
-        #endif
-
-        #ifdef TTYUSB3
-        case RIGHT_LEG_A1:
-            right_leg_a1.sendRecv(&motor_cmd, &motor_ret);
-            break;  
-        #endif 
-    }
+    motor_cmd.tau = 0;
+    motor_cmd.q = 0;
+    motor_cmd.kp = 0;
+    motor_cmd.kd = 0;
+    motor_cmd.dq = 0;
+    PublishMotorCmd(motor_cmd);
 }
 /*
  * 函数名称：PosMode
@@ -88,32 +54,7 @@ void JointMotor::PosMode(float kp,float kd,float q, uint8_t serialport)
     motor_cmd.kd = kd;
     motor_cmd.q = q * queryGearRatio(motor_cmd.motorType); // q代表角度
     motor_cmd.mode = queryMotorMode(motor_cmd.motorType, MotorMode::FOC);
-    switch(serialport)
-    {
-        #ifdef TTYUSB0
-        case LEFT_LEG_B1:
-            left_leg_b1.sendRecv(&motor_cmd, &motor_ret);
-            break;
-        #endif 
-
-        #ifdef TTYUSB1
-        case RIGHT_LEG_B1:
-            right_leg_b1.sendRecv(&motor_cmd, &motor_ret);
-            break;
-        #endif
-
-        #ifdef TTYUSB2
-        case LEFT_LEG_A1:
-            left_leg_a1.sendRecv(&motor_cmd, &motor_ret);
-            break;
-        #endif
-
-        #ifdef TTYUSB3
-        case RIGHT_LEG_A1:
-            right_leg_a1.sendRecv(&motor_cmd, &motor_ret);
-            break;  
-        #endif  
-    }
+    PublishMotorCmd(motor_cmd);
 }
 /*
  * 函数名称：SpeedMode
@@ -135,32 +76,7 @@ void JointMotor::SpeedMode(float kd, float dq, uint8_t serialport)
     motor_cmd.kd = kd;
     motor_cmd.dq = dq * queryGearRatio(motor_cmd.motorType);
     motor_cmd.mode = queryMotorMode(motor_cmd.motorType, MotorMode::FOC);
-    switch(serialport)
-    {
-        #ifdef TTYUSB0
-        case LEFT_LEG_B1:
-            left_leg_b1.sendRecv(&motor_cmd, &motor_ret);
-            break;
-        #endif 
-
-        #ifdef TTYUSB1
-        case RIGHT_LEG_B1:
-            right_leg_b1.sendRecv(&motor_cmd, &motor_ret);
-            break;
-        #endif
-
-        #ifdef TTYUSB2
-        case LEFT_LEG_A1:
-            left_leg_a1.sendRecv(&motor_cmd, &motor_ret);
-            break;
-        #endif
-
-        #ifdef TTYUSB3
-        case RIGHT_LEG_A1:
-            right_leg_a1.sendRecv(&motor_cmd, &motor_ret);
-            break;  
-        #endif
-    }
+    PublishMotorCmd(motor_cmd);
 }
 /*
  * 函数名称：TorqueMode
@@ -181,32 +97,7 @@ void JointMotor::TorqueMode(float tau, uint8_t serialport)
 
     motor_cmd.tau = tau;
     motor_cmd.mode = queryMotorMode(motor_cmd.motorType, MotorMode::FOC);
-    switch(serialport)
-    {
-        #ifdef TTYUSB0
-        case LEFT_LEG_B1:
-            left_leg_b1.sendRecv(&motor_cmd, &motor_ret);
-            break;
-        #endif 
-
-        #ifdef TTYUSB1
-        case RIGHT_LEG_B1:
-            right_leg_b1.sendRecv(&motor_cmd, &motor_ret);
-            break;
-        #endif
-
-        #ifdef TTYUSB2
-        case LEFT_LEG_A1:
-            left_leg_a1.sendRecv(&motor_cmd, &motor_ret);
-            break;
-        #endif
-
-        #ifdef TTYUSB3
-        case RIGHT_LEG_A1:
-            right_leg_a1.sendRecv(&motor_cmd, &motor_ret);
-            break;  
-        #endif
-    }
+    PublishMotorCmd(motor_cmd);
 }
 /*
  * 函数名称：MixedMode
@@ -226,32 +117,7 @@ void JointMotor::MixedMode(float tau, float dq, float q, float kp, float kd, uin
     motor_cmd.kp = kp;
     motor_cmd.kd = kd;
     motor_cmd.mode = queryMotorMode(motor_cmd.motorType, MotorMode::FOC);
-    switch(serialport)
-    {
-        #ifdef TTYUSB0
-        case LEFT_LEG_B1:
-            left_leg_b1.sendRecv(&motor_cmd, &motor_ret);
-            break;
-        #endif 
-
-        #ifdef TTYUSB1
-        case RIGHT_LEG_B1:
-            right_leg_b1.sendRecv(&motor_cmd, &motor_ret);
-            break;
-        #endif
-
-        #ifdef TTYUSB2
-        case LEFT_LEG_A1:
-            left_leg_a1.sendRecv(&motor_cmd, &motor_ret);
-            break;
-        #endif
-
-        #ifdef TTYUSB3
-        case RIGHT_LEG_A1:
-            right_leg_a1.sendRecv(&motor_cmd, &motor_ret);
-            break;  
-        #endif
-    }
+    PublishMotorCmd(motor_cmd);
 }
 /*
  * 函数名称：DampingMode
@@ -272,32 +138,7 @@ void JointMotor::DampingMode(float kd, uint8_t serialport)
     
     motor_cmd.kd = kd;
     motor_cmd.mode = queryMotorMode(motor_cmd.motorType, MotorMode::FOC);
-    switch(serialport)
-    {
-        #ifdef TTYUSB0
-        case LEFT_LEG_B1:
-            left_leg_b1.sendRecv(&motor_cmd, &motor_ret);
-            break;
-        #endif 
-
-        #ifdef TTYUSB1
-        case RIGHT_LEG_B1:
-            right_leg_b1.sendRecv(&motor_cmd, &motor_ret);
-            break;
-        #endif
-
-        #ifdef TTYUSB2
-        case LEFT_LEG_A1:
-            left_leg_a1.sendRecv(&motor_cmd, &motor_ret);
-            break;
-        #endif
-
-        #ifdef TTYUSB3
-        case RIGHT_LEG_A1:
-            right_leg_a1.sendRecv(&motor_cmd, &motor_ret);
-            break;  
-        #endif 
-    }
+    PublishMotorCmd(motor_cmd);
 }
 /*
  * 函数名称：ZeroTorqueMode
@@ -316,30 +157,27 @@ void JointMotor::ZeroTorqueMode(uint8_t serialport)
     motor_cmd.kd = 0;
     motor_cmd.dq = 0;
     motor_cmd.mode = queryMotorMode(motor_cmd.motorType, MotorMode::FOC);
-    switch(serialport)
-    {
-        #ifdef TTYUSB0
-        case LEFT_LEG_B1:
-            left_leg_b1.sendRecv(&motor_cmd, &motor_ret);
-            break;
-        #endif 
+    PublishMotorCmd(motor_cmd);
+}
 
-        #ifdef TTYUSB1
-        case RIGHT_LEG_B1:
-            right_leg_b1.sendRecv(&motor_cmd, &motor_ret);
-            break;
-        #endif
+void JointMotor::MotorStateCallback(const line_motor_comm_pkg::motorMsgBack::ConstPtr& msg)
+{
+    motor_ret.q = msg->q;
+    motor_ret.dq = msg->dq;
+    motor_ret.tau = msg->tau;
+    motor_ret.motor_id = msg->id;
+}
 
-        #ifdef TTYUSB2
-        case LEFT_LEG_A1:
-            left_leg_a1.sendRecv(&motor_cmd, &motor_ret);
-            break;
-        #endif
-
-        #ifdef TTYUSB3
-        case RIGHT_LEG_A1:
-            right_leg_a1.sendRecv(&motor_cmd, &motor_ret);
-            break;  
-        #endif   
-    }
+void JointMotor::PublishMotorCmd(MotorCmd motor_cmd)
+{
+    line_motor_comm_pkg::motorMsgCmd motor_cmd_msg;
+    motor_cmd_msg.id = motor_cmd.id;
+    motor_cmd_msg.mode = motor_cmd.mode;
+    motor_cmd_msg.motorType = (char)motor_cmd.motorType;
+    motor_cmd_msg.tau = motor_cmd.tau;
+    motor_cmd_msg.dq = motor_cmd.dq;
+    motor_cmd_msg.q = motor_cmd.q;
+    motor_cmd_msg.kp = motor_cmd.kp;
+    motor_cmd_msg.kd = motor_cmd.kd;
+    motor_cmd_pub.publish(motor_cmd_msg);
 }

@@ -17,6 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   serial
   sensor_msgs
+  message_generation  
 )
 
 find_package(serial REQUIRED)
@@ -76,6 +77,21 @@ find_package(serial REQUIRED)
 #   std_msgs
 # )
 
+add_message_files(
+  FILES
+  motorMsgCmd.msg
+  motorMsgBack.msg
+  linemotorMsgCmd.msg
+  linemotorMsgBack.msg
+  ankleMotorMsgCmd.msg
+  ankleMotorMsgBack.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
+
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
 ################################################
@@ -108,7 +124,7 @@ find_package(serial REQUIRED)
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES line_motor_comm_pkg
-#  CATKIN_DEPENDS roscpp rospy std_msgs
+ CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
 )
 
@@ -129,10 +145,36 @@ include_directories(
 #   src/${PROJECT_NAME}/line_motor_comm_pkg.cpp
 # )
 
+add_library(util
+  include/util.h
+  src/util.cpp
+)
+
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
 # add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(util ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_library(ModbusCommDrv
+  include/Modbus_Comm.h
+  src/ModbusCommDrv.cpp
+)
+
+add_dependencies(ModbusCommDrv ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_library(B1MotorControl
+  include/B1MotorControl.h
+  src/B1MotorControl.cpp
+)
+
+add_dependencies(B1MotorControl ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+# target_link_libraries(util
+#   ${catkin_LIBRARIES}
+#   controlcan
+#   ${EXTRA_LIBS}
+# )
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
@@ -151,6 +193,7 @@ include_directories(
 ## Specify libraries to link a library or executable target against
 link_directories(
   lib
+  lib/libcanbus
   ${catkin_LIB_DIRS}
   ${serial_LIBRARY_DIRS}
 )
@@ -163,11 +206,67 @@ endif()
 
 add_executable(line_motor_comm_node src/LineMotorComm.cpp src/ModbusCommDrv.cpp src/B1MotorControl.cpp)
 
+add_dependencies(line_motor_comm_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
 target_link_libraries(line_motor_comm_node
+  util
+  ${catkin_LIBRARIES}
+  controlcan
+  ${EXTRA_LIBS}
+)
+
+
+add_executable(gait_host_node src/gait_host.cpp src/ModbusCommDrv.cpp src/B1MotorControl.cpp)
+
+add_dependencies(gait_host_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(gait_host_node
+  util
+  ${catkin_LIBRARIES}
+  controlcan
+  ${EXTRA_LIBS}
+)
+
+
+add_executable(motor_node src/motor_node.cpp)
+
+target_link_libraries(motor_node
+   ${catkin_LIBRARIES}
+   ${EXTRA_LIBS}
+)
+
+add_executable(can_node src/can_node.cpp)
+target_link_libraries(can_node
    ${catkin_LIBRARIES}
    controlcan
    ${EXTRA_LIBS}
+   ModbusCommDrv
+   B1MotorControl
 )
+
+# 踝关节因克斯电机设置
+ add_executable(ankle_motor_node 
+                src/ankle_motor_node.cpp 
+                src/ankle_motor/ankle_comm.cpp 
+                src/ankle_motor/math_ops.cpp)
+
+ target_link_libraries(ankle_motor_node 
+     ${catkin_LIBRARIES}
+     ${EXTRA_LIBS}
+     usb-1.0
+ )
+ target_link_libraries(ankle_motor_node 
+     ${catkin_LIBRARIES}
+     canbus
+)
+
+#add_executable(Single_Leg_Standing_node src/SingleStanding.cpp src/ModbusCommDrv.cpp src/B1MotorControl.cpp)
+
+#target_link_libraries(Single_Leg_Standing_node
+ #   ${catkin_LIBRARIES}
+  #  controlcan
+   # ${EXTRA_LIBS}
+#)
 
 #############
 ## Install ##

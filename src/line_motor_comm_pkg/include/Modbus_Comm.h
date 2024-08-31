@@ -44,6 +44,7 @@ class LineMotor
 {
 public:
     /* 变量声明区 */
+    int CANIndex;
     uint8_t addr_BUS;
     /* 
      * TPDO1:0011b(180h)+addr；RPDO1：0100b(200h)+addr；
@@ -62,7 +63,7 @@ public:
 
     VCI_CAN_OBJ sendTodriver_msg; // 用于SDO的can配置结构体
     /* 函数声明区域 */
-    LineMotor(uint8_t addr); // 直线电机构造函数
+    LineMotor(uint8_t addr, int CANIndex); // 直线电机构造函数
     int8_t DRIVER_OpenCanComm(void); // 开启can通信
     void AbsPos_Set(float absPos); // 绝对位置设置
     void RelPos_Set(float relPos, uint32_t refSpeed); // 相对位置设置
