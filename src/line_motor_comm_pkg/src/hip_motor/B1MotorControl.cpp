@@ -10,9 +10,16 @@ JointMotor::JointMotor(unsigned short motorID, MotorType motorType, ros::NodeHan
     motor_cmd.id = motorID;
     motor_cmd.motorType = motorType;
     motor_ret.motorType = motorType;
-    motor_cmd_pub = nh.advertise<line_motor_comm_pkg::motorMsgCmd>(motor_name + "_cmd", 1);
+    motor_ret.q = 100;
+    motor_cmd_pub = nh.advertise<line_motor_comm_pkg::hipMotorMsgCmd>(motor_name + "_cmd", 1);
     motor_state_sub = nh.subscribe(motor_name + "_state", 1, &JointMotor::MotorStateCallback, this);
 }
+
+float JointMotor::PosBias(void)
+{
+    return (abs(motor_ret.q - motor_last_ret.q));
+}
+
 /*
  * 函数名称：BrakMode
  * 函数描述：关节电机停机
@@ -25,13 +32,23 @@ JointMotor::JointMotor(unsigned short motorID, MotorType motorType, ros::NodeHan
  */
 void JointMotor::BrakMode(uint8_t serialport)
 {
-    motor_cmd.mode = queryMotorMode(motor_cmd.motorType, MotorMode::BRAKE);
-    motor_cmd.tau = 0;
-    motor_cmd.q = 0;
-    motor_cmd.kp = 0;
-    motor_cmd.kd = 0;
-    motor_cmd.dq = 0;
-    PublishMotorCmd(motor_cmd);
+    // motor_cmd.mode = queryMotorMode(motor_cmd.motorType, MotorMode::BRAKE);
+    // motor_cmd.tau = 0;
+    // motor_cmd.q = 0;
+    // motor_cmd.kp = 0;
+    // motor_cmd.kd = 0;
+    // motor_cmd.dq = 0;
+    // PublishMotorCmd(motor_cmd);
+    line_motor_comm_pkg::hipMotorMsgCmd hip_motor_cmd_msg;
+    hip_motor_cmd_msg.tau = 0;
+    hip_motor_cmd_msg.dq = 0;
+    hip_motor_cmd_msg.q = 0;
+    hip_motor_cmd_msg.kp = 0;
+    hip_motor_cmd_msg.kd = 0;
+    hip_motor_cmd_msg.id = motor_cmd.id;
+    hip_motor_cmd_msg.motorType = (char)motor_cmd.motorType;
+    hip_motor_cmd_msg.mode = queryMotorMode(motor_cmd.motorType, MotorMode::BRAKE);
+    motor_cmd_pub.publish(hip_motor_cmd_msg);
 }
 /*
  * 函数名称：PosMode
@@ -111,13 +128,23 @@ void JointMotor::TorqueMode(float tau, uint8_t serialport)
  */
 void JointMotor::MixedMode(float tau, float dq, float q, float kp, float kd, uint8_t serialport)
 {
-    motor_cmd.tau = tau* queryGearRatio(motor_cmd.motorType);
-    motor_cmd.dq = dq* queryGearRatio(motor_cmd.motorType);
-    motor_cmd.q = q* queryGearRatio(motor_cmd.motorType);
-    motor_cmd.kp = kp;
-    motor_cmd.kd = kd;
-    motor_cmd.mode = queryMotorMode(motor_cmd.motorType, MotorMode::FOC);
-    PublishMotorCmd(motor_cmd);
+    line_motor_comm_pkg::hipMotorMsgCmd hip_motor_cmd_msg;
+    hip_motor_cmd_msg.tau = tau;
+    hip_motor_cmd_msg.dq = dq;
+    hip_motor_cmd_msg.q = q;
+    hip_motor_cmd_msg.kp = kp;
+    hip_motor_cmd_msg.kd = kd;
+    hip_motor_cmd_msg.id = motor_cmd.id;
+    hip_motor_cmd_msg.motorType = (char)motor_cmd.motorType;
+    hip_motor_cmd_msg.mode = queryMotorMode(motor_cmd.motorType, MotorMode::FOC);
+    motor_cmd_pub.publish(hip_motor_cmd_msg);
+    // motor_cmd.tau = tau* queryGearRatio(motor_cmd.motorType);
+    // motor_cmd.dq = dq* queryGearRatio(motor_cmd.motorType);
+    // motor_cmd.q = q* queryGearRatio(motor_cmd.motorType);
+    // motor_cmd.kp = kp;
+    // motor_cmd.kd = kd;
+    // motor_cmd.mode = queryMotorMode(motor_cmd.motorType, MotorMode::FOC);
+    // PublishMotorCmd(motor_cmd);
 }
 /*
  * 函数名称：DampingMode
@@ -160,8 +187,13 @@ void JointMotor::ZeroTorqueMode(uint8_t serialport)
     PublishMotorCmd(motor_cmd);
 }
 
-void JointMotor::MotorStateCallback(const line_motor_comm_pkg::motorMsgBack::ConstPtr& msg)
+void JointMotor::MotorStateCallback(const line_motor_comm_pkg::hipMotorMsgBack::ConstPtr& msg)
 {
+    motor_last_ret.q = motor_ret.q;
+    motor_last_ret.dq = motor_ret.dq;
+    motor_last_ret.tau = motor_ret.tau;
+    motor_last_ret.motor_id = motor_ret.motor_id;
+
     motor_ret.q = msg->q;
     motor_ret.dq = msg->dq;
     motor_ret.tau = msg->tau;
@@ -170,7 +202,7 @@ void JointMotor::MotorStateCallback(const line_motor_comm_pkg::motorMsgBack::Con
 
 void JointMotor::PublishMotorCmd(MotorCmd motor_cmd)
 {
-    line_motor_comm_pkg::motorMsgCmd motor_cmd_msg;
+    line_motor_comm_pkg::hipMotorMsgCmd motor_cmd_msg;
     motor_cmd_msg.id = motor_cmd.id;
     motor_cmd_msg.mode = motor_cmd.mode;
     motor_cmd_msg.motorType = (char)motor_cmd.motorType;

@@ -122,7 +122,7 @@ float ankler_period[number_period] = {0};
 double angular[3];
 ros::Publisher linemotor_state_pub;
 
-void Receive_Linemotor_Fcn(int CANIndex);
+void Receive_Linemotor_Fcn(int CANIndex);l
 void Receive_Zero_Fcn(int CANIndex);
 void imu_feedback(sensor_msgs::Imu imu_data);
 int8_t CanPort_Open(void);
@@ -176,7 +176,7 @@ void AnkleMotorPubCallback(const line_motor_comm_pkg::ankleMotorMsgBack::ConstPt
 		case 3:
 		{
 			current_pos[3] = msg->pos / (2.0*PI) * 360.0; // 角度制
-			current_spd[3] = msg->spd * 60 / (2*PI);
+			current_spd[3] = msg->spd * 60 / (2*PI);l
 			current_tau[3] = msg->tau;
 			std::cout<<"当前右腿右侧电机速度值为："<<current_spd[3]<<std::endl;
 			break;

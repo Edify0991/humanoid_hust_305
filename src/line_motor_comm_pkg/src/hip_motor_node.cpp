@@ -1,7 +1,7 @@
 #include "serialPort/SerialPort.h"
 #include "ros/callback_queue.h"
-#include "line_motor_comm_pkg/motorMsgCmd.h"
-#include "line_motor_comm_pkg/motorMsgBack.h"
+#include "line_motor_comm_pkg/hipMotorMsgCmd.h"
+#include "line_motor_comm_pkg/hipMotorMsgBack.h"
 #include "ros/ros.h"
 #include <thread>
 #include <vector>
@@ -32,10 +32,6 @@ std::vector<std::string> motor_name_ = {
                                 "hip_ll",  
                                 "hip_rb",
                                 "hip_rr", 
-                                "ankle_ll",
-                                "ankle_lr",
-								"ankle_rr",
-                                "ankle_rl",
                                 };
 
 std::vector<std::thread> threads;
@@ -43,16 +39,17 @@ std::vector<ros::Publisher> motor_state_pub;
 std::vector<SerialPort*> motor_ports;
 
 auto start_time = std::chrono::high_resolution_clock::now();
-void MotorCmdCallback(const line_motor_comm_pkg::motorMsgCmd::ConstPtr& msg, int motor_id)
+void MotorCmdCallback(const line_motor_comm_pkg::hipMotorMsgCmd::ConstPtr& msg, int motor_id)
 {
+    // 发送数据回调, msg文件里面的所有数据均为减速器输出端的输出值
     MotorCmd motor_cmd;
     motor_cmd.id = msg->id;
     motor_cmd.motorType = static_cast<MotorType>(msg->motorType);
     motor_cmd.mode = msg->mode;
-    motor_cmd.tau = msg->tau;
-    motor_cmd.dq = msg->dq;
-    motor_cmd.q = msg->q;
-    motor_cmd.kp = msg->kp;
+    motor_cmd.tau = msg->tau / queryGearRatio(MotorType::B1);
+    motor_cmd.dq = msg->dq * queryGearRatio(MotorType::B1);
+    motor_cmd.q = msg->q * queryGearRatio(MotorType::B1);
+    motor_cmd.kp = msg->kp; // 这里待确定
     motor_cmd.kd = msg->kd;
     MotorData motor_ret;
     motor_ret.motorType = static_cast<MotorType>(msg->motorType);
@@ -81,11 +78,11 @@ void MotorCmdCallback(const line_motor_comm_pkg::motorMsgCmd::ConstPtr& msg, int
     // }
     
 
-    line_motor_comm_pkg::motorMsgBack motor_ret_msg;
+    line_motor_comm_pkg::hipMotorMsgBack motor_ret_msg;
     motor_ret_msg.id = motor_id;
-    motor_ret_msg.tau = motor_ret.tau;
-    motor_ret_msg.dq = motor_ret.dq;
-    motor_ret_msg.q = motor_ret.q;
+    motor_ret_msg.tau = motor_ret.tau * queryGearRatio(MotorType::B1);
+    motor_ret_msg.dq = motor_ret.dq / queryGearRatio(MotorType::B1);
+    motor_ret_msg.q = motor_ret.q / queryGearRatio(MotorType::B1);
     
     motor_state_pub[motor_id].publish(motor_ret_msg);
     
@@ -97,7 +94,7 @@ void UnitreeMotor_CmdThread(int motor_id, ros::NodeHandle nh)
 {
     ros::CallbackQueue queue;
     nh.setCallbackQueue(&queue);
-    ros::Subscriber sub = nh.subscribe<line_motor_comm_pkg::motorMsgCmd>(
+    ros::Subscriber sub = nh.subscribe<line_motor_comm_pkg::hipMotorMsgCmd>(
             motor_name_[motor_id] + "_cmd", 
             1, 
             boost::bind(MotorCmdCallback, 
@@ -122,7 +119,7 @@ int main(int argc, char** argv)
     {
 
         motor_ports.push_back(new SerialPort("/dev/usb_" + motor_name_[i]));
-        motor_state_pub[i] = nh.advertise<line_motor_comm_pkg::motorMsgBack>(motor_name_[i] + "_state", 1);
+        motor_state_pub[i] = nh.advertise<line_motor_comm_pkg::hipMotorMsgBack>(motor_name_[i] + "_state", 1);
         threads[i] = std::thread(UnitreeMotor_CmdThread, i, std::ref(nh));    
     }
 

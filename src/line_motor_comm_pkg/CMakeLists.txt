@@ -79,12 +79,14 @@ find_package(serial REQUIRED)
 
 add_message_files(
   FILES
-  motorMsgCmd.msg
-  motorMsgBack.msg
+  hipMotorMsgCmd.msg
+  hipMotorMsgBack.msg
   linemotorMsgCmd.msg
   linemotorMsgBack.msg
   ankleMotorMsgCmd.msg
   ankleMotorMsgBack.msg
+  allMotorsMsgCmd.msg
+  allMotorsMsgBack.msg
 )
 
 generate_messages(
@@ -158,14 +160,14 @@ add_dependencies(util ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARG
 
 add_library(ModbusCommDrv
   include/Modbus_Comm.h
-  src/ModbusCommDrv.cpp
+  src/knee_motor/ModbusCommDrv.cpp
 )
 
 add_dependencies(ModbusCommDrv ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_library(B1MotorControl
   include/B1MotorControl.h
-  src/B1MotorControl.cpp
+  src/hip_motor/B1MotorControl.cpp
 )
 
 add_dependencies(B1MotorControl ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -204,11 +206,22 @@ else()
     set(EXTRA_LIBS libUnitreeMotorSDK_Linux64.so)
 endif()
 
-add_executable(line_motor_comm_node src/LineMotorComm.cpp src/ModbusCommDrv.cpp src/B1MotorControl.cpp)
+#add_executable(line_motor_comm_node src/LineMotorComm.cpp src/ModbusCommDrv.cpp src/B1MotorControl.cpp)
 
-add_dependencies(line_motor_comm_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_dependencies(line_motor_comm_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(line_motor_comm_node
+#target_link_libraries(line_motor_comm_node
+#  util
+#  ${catkin_LIBRARIES}
+#  controlcan
+#  ${EXTRA_LIBS}
+#)
+
+add_executable(robot_main_node src/robot_main_node.cpp src/knee_motor/ModbusCommDrv.cpp src/hip_motor/B1MotorControl.cpp)
+
+add_dependencies(robot_main_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(robot_main_node
   util
   ${catkin_LIBRARIES}
   controlcan
@@ -216,21 +229,21 @@ target_link_libraries(line_motor_comm_node
 )
 
 
-add_executable(gait_host_node src/gait_host.cpp src/ModbusCommDrv.cpp src/B1MotorControl.cpp)
+#add_executable(gait_host_node src/gait_host.cpp src/ModbusCommDrv.cpp src/B1MotorControl.cpp)
 
-add_dependencies(gait_host_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_dependencies(gait_host_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(gait_host_node
-  util
-  ${catkin_LIBRARIES}
-  controlcan
-  ${EXTRA_LIBS}
-)
+#target_link_libraries(gait_host_node
+#  util
+#  ${catkin_LIBRARIES}
+#  controlcan
+#  ${EXTRA_LIBS}
+#)
 
 
-add_executable(motor_node src/motor_node.cpp)
+add_executable(hip_motor_node src/hip_motor_node.cpp src/hip_motor/B1MotorControl.cpp)
 
-target_link_libraries(motor_node
+target_link_libraries(hip_motor_node
    ${catkin_LIBRARIES}
    ${EXTRA_LIBS}
 )

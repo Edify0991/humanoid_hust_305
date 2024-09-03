@@ -1,0 +1,10 @@
+ankleMotorMsgCmd ankle_motor_ll_cmd
+ankleMotorMsgCmd ankle_motor_lr_cmd
+ankleMotorMsgCmd ankle_motor_rl_cmd
+ankleMotorMsgCmd ankle_motor_rr_cmd
+hipMotorMsgCmd hip_motor_l_pitch_cmd
+hipMotorMsgCmd hip_motor_l_rotate_cmd
+hipMotorMsgCmd hip_motor_r_pitch_cmd
+hipMotorMsgCmd hip_motor_r_rotate_cmd
+linemotorMsgCmd line_motor_l_cmd
+linemotorMsgCmd line_motor_r_cmd
