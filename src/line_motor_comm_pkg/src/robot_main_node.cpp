@@ -414,10 +414,10 @@ int main(int argc, char** argv)
                     hipmotorL_0.MixedMode(0, 0, l_rotate_hip_motor, 6, 10, 1);
                     hipmotorR_0.MixedMode(0, 0, r_rotate_hip_motor, 6, 10, 1);
 
-                    AnkleMotorCMD(ANKLE_LL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -anklel_begin[CntPitch - 1] + k_ankle_hip_roll * hip_roll[i % (2 * unit_time)] / PI *180.0, 20, 0, 30);
-                    AnkleMotorCMD(ANKLE_LR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, anklel_begin[CntPitch - 1] + k_ankle_hip_roll * hip_roll[i % (2 * unit_time)] / PI *180.0, 20, 0, 30);
-                    AnkleMotorCMD(ANKLE_RL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -ankler_begin[CntPitch - 1] + k_ankle_hip_roll * hip_roll[i % (2 * unit_time)] / PI *180.0, 20, 0, 30);
-                    AnkleMotorCMD(ANKLE_RR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, ankler_begin[CntPitch - 1] + k_ankle_hip_roll * hip_roll[i % (2 * unit_time)] / PI *180.0, 20, 0, 30);
+                    AnkleMotorCMD(ANKLE_LL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -anklel_begin[CntPitch - 1] + k_ankle_hip_roll * hip_roll[i % (2 * unit_time)], 20, 0, 30);
+                    AnkleMotorCMD(ANKLE_LR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, anklel_begin[CntPitch - 1] + k_ankle_hip_roll * hip_roll[i % (2 * unit_time)], 20, 0, 30);
+                    AnkleMotorCMD(ANKLE_RL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -ankler_begin[CntPitch - 1] + k_ankle_hip_roll * hip_roll[i % (2 * unit_time)], 20, 0, 30);
+                    AnkleMotorCMD(ANKLE_RR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, ankler_begin[CntPitch - 1] + k_ankle_hip_roll * hip_roll[i % (2 * unit_time)], 20, 0, 30);
                     ankle_motor_ll_cmd_pub.publish(ankle_motor_ll_msg);
                     ankle_motor_lr_cmd_pub.publish(ankle_motor_lr_msg);
                     ankle_motor_rl_cmd_pub.publish(ankle_motor_rl_msg);
@@ -445,10 +445,10 @@ int main(int argc, char** argv)
                         V_LeftAnkle = 0;	
                         V_RightAnkle = 0;
                     }
-                    AnkleMotorCMD(ANKLE_LL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -anklel_begin[i] + k_ankle_hip_roll * hip_roll[CntRoll % (2 * unit_time)] / PI *180.0, 20, 0, 30);
-                    AnkleMotorCMD(ANKLE_LR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, anklel_begin[i] + k_ankle_hip_roll * hip_roll[CntRoll % (2 * unit_time)] / PI *180.0, 20, 0, 30);
-                    AnkleMotorCMD(ANKLE_RL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -ankler_begin[i] + k_ankle_hip_roll * hip_roll[CntRoll % (2 * unit_time)] / PI *180.0, 20, 0, 30);
-                    AnkleMotorCMD(ANKLE_RR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, ankler_begin[i] + k_ankle_hip_roll * hip_roll[CntRoll % (2 * unit_time)] / PI *180.0, 20, 0, 30);
+                    AnkleMotorCMD(ANKLE_LL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -anklel_begin[i] + k_ankle_hip_roll * hip_roll[CntRoll % (2 * unit_time)], 20, 0, 30);
+                    AnkleMotorCMD(ANKLE_LR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, anklel_begin[i] + k_ankle_hip_roll * hip_roll[CntRoll % (2 * unit_time)], 20, 0, 30);
+                    AnkleMotorCMD(ANKLE_RL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -ankler_begin[i] + k_ankle_hip_roll * hip_roll[CntRoll % (2 * unit_time)], 20, 0, 30);
+                    AnkleMotorCMD(ANKLE_RR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, ankler_begin[i] + k_ankle_hip_roll * hip_roll[CntRoll % (2 * unit_time)], 20, 0, 30);
                     ankle_motor_ll_cmd_pub.publish(ankle_motor_ll_msg);
                     ankle_motor_lr_cmd_pub.publish(ankle_motor_lr_msg);
                     ankle_motor_rl_cmd_pub.publish(ankle_motor_rl_msg);
@@ -486,10 +486,10 @@ int main(int argc, char** argv)
                     hipmotorL_0.MixedMode(0, 0, l_rotate_hip_motor, 6, 10, 1);
                     hipmotorR_0.MixedMode(0, 0, r_rotate_hip_motor, 6, 10, 1);
 
-                    AnkleMotorCMD(ANKLE_LL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -anklel_begin[number_begin - 1] + k_ankle_hip_roll * hip_roll[i % (2 * unit_time)] / PI *180.0, 20, 0, 30);
-                    AnkleMotorCMD(ANKLE_LR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, anklel_begin[number_begin - 1] + k_ankle_hip_roll * hip_roll[i % (2 * unit_time)] / PI *180.0, 20, 0, 30);
-                    AnkleMotorCMD(ANKLE_RL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -ankler_begin[number_begin - 1] + k_ankle_hip_roll * hip_roll[i % (2 * unit_time)] / PI *180.0, 20, 0, 30);
-                    AnkleMotorCMD(ANKLE_RR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, ankler_begin[number_begin - 1] + k_ankle_hip_roll * hip_roll[i % (2 * unit_time)] / PI *180.0, 20, 0, 30);
+                    AnkleMotorCMD(ANKLE_LL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -anklel_begin[number_begin - 1] + k_ankle_hip_roll * hip_roll[i % (2 * unit_time)], 20, 0, 30);
+                    AnkleMotorCMD(ANKLE_LR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, anklel_begin[number_begin - 1] + k_ankle_hip_roll * hip_roll[i % (2 * unit_time)], 20, 0, 30);
+                    AnkleMotorCMD(ANKLE_RL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -ankler_begin[number_begin - 1] + k_ankle_hip_roll * hip_roll[i % (2 * unit_time)], 20, 0, 30);
+                    AnkleMotorCMD(ANKLE_RR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, ankler_begin[number_begin - 1] + k_ankle_hip_roll * hip_roll[i % (2 * unit_time)], 20, 0, 30);
                     ankle_motor_ll_cmd_pub.publish(ankle_motor_ll_msg);
                     ankle_motor_lr_cmd_pub.publish(ankle_motor_lr_msg);
                     ankle_motor_rl_cmd_pub.publish(ankle_motor_rl_msg);
@@ -513,10 +513,10 @@ int main(int argc, char** argv)
                         hipmotorL_0.MixedMode(0, 0, l_rotate_hip_motor, 6, 10, 1);
                         hipmotorR_0.MixedMode(0, 0, r_rotate_hip_motor, 6, 10, 1);
 
-                        AnkleMotorCMD(ANKLE_LL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -anklel_begin[number_begin - 1] + to_right_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)] / PI *180.0, 20, 0, 30);
-                        AnkleMotorCMD(ANKLE_LR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, anklel_begin[number_begin - 1] + to_right_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)] / PI *180.0, 20, 0, 30);
-                        AnkleMotorCMD(ANKLE_RL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -ankler_begin[number_begin - 1] + to_right_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)] / PI *180.0, 20, 0, 30);
-                        AnkleMotorCMD(ANKLE_RR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, ankler_begin[number_begin - 1] + to_right_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)] / PI *180.0, 20, 0, 30);
+                        AnkleMotorCMD(ANKLE_LL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -anklel_begin[number_begin - 1] + to_right_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)], 20, 0, 30);
+                        AnkleMotorCMD(ANKLE_LR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, anklel_begin[number_begin - 1] + to_right_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)], 20, 0, 30);
+                        AnkleMotorCMD(ANKLE_RL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -ankler_begin[number_begin - 1] + to_right_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)], 20, 0, 30);
+                        AnkleMotorCMD(ANKLE_RR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, ankler_begin[number_begin - 1] + to_right_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)], 20, 0, 30);
                         ankle_motor_ll_cmd_pub.publish(ankle_motor_ll_msg);
                         ankle_motor_lr_cmd_pub.publish(ankle_motor_lr_msg);
                         ankle_motor_rl_cmd_pub.publish(ankle_motor_rl_msg);
@@ -547,10 +547,10 @@ int main(int argc, char** argv)
                             V_RightAnkle = 0;
                         }
 
-                        AnkleMotorCMD(ANKLE_LL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -anklel_period[i] + to_right_factor * k_ankle_hip_roll * hip_roll[CntRoll % (2 * unit_time)] / PI *180.0, 20, 0, 30);
-                        AnkleMotorCMD(ANKLE_LR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, anklel_period[i] + to_right_factor * k_ankle_hip_roll * hip_roll[CntRoll % (2 * unit_time)] / PI *180.0, 20, 0, 30);
-                        AnkleMotorCMD(ANKLE_RL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -ankler_period[i] + to_right_factor * k_ankle_hip_roll * hip_roll[CntRoll % (2 * unit_time)] / PI *180.0, 20, 0, 30);
-                        AnkleMotorCMD(ANKLE_RR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, ankler_period[i] + to_right_factor * k_ankle_hip_roll * hip_roll[CntRoll % (2 * unit_time)] / PI *180.0, 20, 0, 30);
+                        AnkleMotorCMD(ANKLE_LL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -anklel_period[i] + to_right_factor * k_ankle_hip_roll * hip_roll[CntRoll % (2 * unit_time)], 20, 0, 30);
+                        AnkleMotorCMD(ANKLE_LR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, anklel_period[i] + to_right_factor * k_ankle_hip_roll * hip_roll[CntRoll % (2 * unit_time)], 20, 0, 30);
+                        AnkleMotorCMD(ANKLE_RL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -ankler_period[i] + to_right_factor * k_ankle_hip_roll * hip_roll[CntRoll % (2 * unit_time)], 20, 0, 30);
+                        AnkleMotorCMD(ANKLE_RR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, ankler_period[i] + to_right_factor * k_ankle_hip_roll * hip_roll[CntRoll % (2 * unit_time)], 20, 0, 30);
                         ankle_motor_ll_cmd_pub.publish(ankle_motor_ll_msg);
                         ankle_motor_lr_cmd_pub.publish(ankle_motor_lr_msg);
                         ankle_motor_rl_cmd_pub.publish(ankle_motor_rl_msg);
@@ -590,10 +590,10 @@ int main(int argc, char** argv)
                         hipmotorL_0.MixedMode(0, 0, l_rotate_hip_motor, 6, 10, 1);
                         hipmotorR_0.MixedMode(0, 0, r_rotate_hip_motor, 6, 10, 1);
 
-                        AnkleMotorCMD(ANKLE_LL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -anklel_period[number_period / 2 - 1] + to_right_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)] / PI *180.0, 20, 0, 30);
-                        AnkleMotorCMD(ANKLE_LR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, anklel_period[number_period / 2 - 1] + to_right_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)] / PI *180.0, 20, 0, 30);
-                        AnkleMotorCMD(ANKLE_RL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -ankler_period[number_period / 2 - 1] + to_right_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)] / PI *180.0, 20, 0, 30);
-                        AnkleMotorCMD(ANKLE_RR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, ankler_period[number_period / 2 - 1] + to_right_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)] / PI *180.0, 20, 0, 30);
+                        AnkleMotorCMD(ANKLE_LL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -anklel_period[number_period / 2 - 1] + to_right_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)], 20, 0, 30);
+                        AnkleMotorCMD(ANKLE_LR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, anklel_period[number_period / 2 - 1] + to_right_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)], 20, 0, 30);
+                        AnkleMotorCMD(ANKLE_RL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -ankler_period[number_period / 2 - 1] + to_right_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)], 20, 0, 30);
+                        AnkleMotorCMD(ANKLE_RR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, ankler_period[number_period / 2 - 1] + to_right_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)], 20, 0, 30);
                         ankle_motor_ll_cmd_pub.publish(ankle_motor_ll_msg);
                         ankle_motor_lr_cmd_pub.publish(ankle_motor_lr_msg);
                         ankle_motor_rl_cmd_pub.publish(ankle_motor_rl_msg);
@@ -611,10 +611,10 @@ int main(int argc, char** argv)
                         hipmotorL_0.MixedMode(0, 0, l_rotate_hip_motor, 6, 10, 1);
                         hipmotorR_0.MixedMode(0, 0, r_rotate_hip_motor, 6, 10, 1);
 
-                        AnkleMotorCMD(ANKLE_LL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -anklel_period[number_period / 2 - 1] + to_left_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)] / PI *180.0, 20, 0, 30);
-                        AnkleMotorCMD(ANKLE_LR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, anklel_period[number_period / 2 - 1] + to_left_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)] / PI *180.0, 20, 0, 30);
-                        AnkleMotorCMD(ANKLE_RL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -ankler_period[number_period / 2 - 1] + to_left_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)] / PI *180.0, 20, 0, 30);
-                        AnkleMotorCMD(ANKLE_RR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, ankler_period[number_period / 2 - 1] + to_left_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)] / PI *180.0, 20, 0, 30);
+                        AnkleMotorCMD(ANKLE_LL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -anklel_period[number_period / 2 - 1] + to_left_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)], 20, 0, 30);
+                        AnkleMotorCMD(ANKLE_LR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, anklel_period[number_period / 2 - 1] + to_left_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)], 20, 0, 30);
+                        AnkleMotorCMD(ANKLE_RL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -ankler_period[number_period / 2 - 1] + to_left_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)], 20, 0, 30);
+                        AnkleMotorCMD(ANKLE_RR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, ankler_period[number_period / 2 - 1] + to_left_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)], 20, 0, 30);
                         ankle_motor_ll_cmd_pub.publish(ankle_motor_ll_msg);
                         ankle_motor_lr_cmd_pub.publish(ankle_motor_lr_msg);
                         ankle_motor_rl_cmd_pub.publish(ankle_motor_rl_msg);
@@ -643,10 +643,10 @@ int main(int argc, char** argv)
                             V_RightAnkle = 0;
                         }
 
-                        AnkleMotorCMD(ANKLE_LL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -anklel_period[i] + to_left_factor * k_ankle_hip_roll * hip_roll[CntRoll % (2 * unit_time)] / PI *180.0, 20, 0, 30);
-                        AnkleMotorCMD(ANKLE_LR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, anklel_period[i] + to_left_factor * k_ankle_hip_roll * hip_roll[CntRoll % (2 * unit_time)] / PI *180.0, 20, 0, 30);
-                        AnkleMotorCMD(ANKLE_RL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -ankler_period[i] + to_left_factor * k_ankle_hip_roll * hip_roll[CntRoll % (2 * unit_time)] / PI *180.0, 20, 0, 30);
-                        AnkleMotorCMD(ANKLE_RR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, ankler_period[i] + to_left_factor * k_ankle_hip_roll * hip_roll[CntRoll % (2 * unit_time)] / PI *180.0, 20, 0, 30);
+                        AnkleMotorCMD(ANKLE_LL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -anklel_period[i] + to_left_factor * k_ankle_hip_roll * hip_roll[CntRoll % (2 * unit_time)], 20, 0, 30);
+                        AnkleMotorCMD(ANKLE_LR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, anklel_period[i] + to_left_factor * k_ankle_hip_roll * hip_roll[CntRoll % (2 * unit_time)], 20, 0, 30);
+                        AnkleMotorCMD(ANKLE_RL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -ankler_period[i] + to_left_factor * k_ankle_hip_roll * hip_roll[CntRoll % (2 * unit_time)], 20, 0, 30);
+                        AnkleMotorCMD(ANKLE_RR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, ankler_period[i] + to_left_factor * k_ankle_hip_roll * hip_roll[CntRoll % (2 * unit_time)], 20, 0, 30);
                         ankle_motor_ll_cmd_pub.publish(ankle_motor_ll_msg);
                         ankle_motor_lr_cmd_pub.publish(ankle_motor_lr_msg);
                         ankle_motor_rl_cmd_pub.publish(ankle_motor_rl_msg);
@@ -692,10 +692,10 @@ int main(int argc, char** argv)
                         hipmotorL_0.MixedMode(0, 0, l_rotate_hip_motor, 6, 10, 1);
                         hipmotorR_0.MixedMode(0, 0, r_rotate_hip_motor, 6, 10, 1);
 
-                        AnkleMotorCMD(ANKLE_LL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -anklel_period[number_period - 1] + to_left_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)] / PI *180.0, 20, 0, 30);
-                        AnkleMotorCMD(ANKLE_LR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, anklel_period[number_period - 1] + to_left_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)] / PI *180.0, 20, 0, 30);
-                        AnkleMotorCMD(ANKLE_RL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -ankler_period[number_period - 1] + to_left_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)] / PI *180.0, 20, 0, 30);
-                        AnkleMotorCMD(ANKLE_RR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, ankler_period[number_period - 1] + to_left_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)] / PI *180.0, 20, 0, 30);
+                        AnkleMotorCMD(ANKLE_LL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -anklel_period[number_period - 1] + to_left_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)], 20, 0, 30);
+                        AnkleMotorCMD(ANKLE_LR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, anklel_period[number_period - 1] + to_left_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)], 20, 0, 30);
+                        AnkleMotorCMD(ANKLE_RL_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, -ankler_period[number_period - 1] + to_left_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)], 20, 0, 30);
+                        AnkleMotorCMD(ANKLE_RR_MOTOR_NUM, MIXED_CONTROL_STEP, kp_ankle, kd_ankle, ankler_period[number_period - 1] + to_left_factor * k_ankle_hip_roll * hip_roll[i % (2 * unit_time)], 20, 0, 30);
                         ankle_motor_ll_cmd_pub.publish(ankle_motor_ll_msg);
                         ankle_motor_lr_cmd_pub.publish(ankle_motor_lr_msg);
                         ankle_motor_rl_cmd_pub.publish(ankle_motor_rl_msg);
