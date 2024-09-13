@@ -131,7 +131,6 @@ void LineMotorCmdCallback(const line_motor_comm_pkg::linemotorMsgBack::ConstPtr&
 	switch(linemotorID) {
 		case 0: {
 			RTPos_left = msg->x;
-			std::cout << "RTPOS_LEFT: " << RTPos_left << std::endl;
 			break;
 		}
 		case 1: {
@@ -152,8 +151,8 @@ void AnkleMotorPubCallback(const line_motor_comm_pkg::ankleMotorMsgBack::ConstPt
 			current_pos[0] = msg->pos / (2.0*PI) * 360.0;
 			current_spd[0] = msg->spd * 60 / (2*PI); // r/min
 			current_tau[0] = msg->tau;
-			std::cout<<"当前左腿左侧电机位置值为："<<current_pos[0]<<std::endl;
-			std::cout<<"当前左腿左侧电机速度值为："<<current_spd[0]<<std::endl;
+			// std::cout<<"当前左腿左侧电机位置值为："<<current_pos[0]<<std::endl;
+			// std::cout<<"当前左腿左侧电机速度值为："<<current_spd[0]<<std::endl;
 			break;
 		}
 		case 1:
@@ -161,8 +160,8 @@ void AnkleMotorPubCallback(const line_motor_comm_pkg::ankleMotorMsgBack::ConstPt
 			current_pos[1] = msg->pos / (2.0*PI) * 360.0;
 			current_spd[1] = msg->spd * 60 / (2*PI);
 			current_tau[1] = msg->tau;
-			std::cout<<"当前左腿右侧电机位置值为："<<current_pos[0]<<std::endl;
-			std::cout<<"当前左腿右侧电机速度值为："<<current_spd[1]<<std::endl;
+			// std::cout<<"当前左腿右侧电机位置值为："<<current_pos[0]<<std::endl;
+			// std::cout<<"当前左腿右侧电机速度值为："<<current_spd[1]<<std::endl;
 			break;
 		}
 		case 2:
@@ -170,7 +169,7 @@ void AnkleMotorPubCallback(const line_motor_comm_pkg::ankleMotorMsgBack::ConstPt
 			current_pos[2] = msg->pos / (2.0*PI) * 360.0;
 			current_spd[2] = msg->spd * 60 / (2*PI);
 			current_tau[2] = msg->tau;
-			std::cout<<"当前右腿左侧电机速度值为："<<current_spd[2]<<std::endl;
+			// std::cout<<"当前右腿左侧电机速度值为："<<current_spd[2]<<std::endl;
 			break;
 		}
 		case 3:
@@ -178,7 +177,7 @@ void AnkleMotorPubCallback(const line_motor_comm_pkg::ankleMotorMsgBack::ConstPt
 			current_pos[3] = msg->pos / (2.0*PI) * 360.0; // 角度制
 			current_spd[3] = msg->spd * 60 / (2*PI);l
 			current_tau[3] = msg->tau;
-			std::cout<<"当前右腿右侧电机速度值为："<<current_spd[3]<<std::endl;
+			// std::cout<<"当前右腿右侧电机速度值为："<<current_spd[3]<<std::endl;
 			break;
 		}
 	}
@@ -231,138 +230,6 @@ int main(int argc, char** argv)
 		t = t + delta;
 	}
 
-	// 创建IMU消息订阅者
-	ros::Subscriber sub_imu = nh.subscribe<sensor_msgs::Imu>("imu_data", 10, imu_feedback);
-
-	// 创建踝关节电机消息订阅和发布
-	ros::Publisher ankle_motor_ll_cmd_pub = nh.advertise<line_motor_comm_pkg::ankleMotorMsgCmd>(ankle_motor_name[0]+"_cmd", 1);
-	ros::Publisher ankle_motor_lr_cmd_pub = nh.advertise<line_motor_comm_pkg::ankleMotorMsgCmd>(ankle_motor_name[1]+"_cmd", 1);
-	ros::Publisher ankle_motor_rl_cmd_pub = nh.advertise<line_motor_comm_pkg::ankleMotorMsgCmd>(ankle_motor_name[2]+"_cmd", 1);
-	ros::Publisher ankle_motor_rr_cmd_pub = nh.advertise<line_motor_comm_pkg::ankleMotorMsgCmd>(ankle_motor_name[3]+"_cmd", 1);
-	
-	int anklemotorID = 0;
-	ros::Subscriber ankle_motor_ll_state_sub = nh.subscribe<line_motor_comm_pkg::ankleMotorMsgBack>(ankle_motor_name[0]+"_state", 1, boost::bind(&AnkleMotorPubCallback, _1, anklemotorID));
-	anklemotorID = 1;
-	ros::Subscriber ankle_motor_lr_state_sub = nh.subscribe<line_motor_comm_pkg::ankleMotorMsgBack>(ankle_motor_name[1]+"_state", 1, boost::bind(&AnkleMotorPubCallback, _1, anklemotorID));
-	anklemotorID = 2;
-	ros::Subscriber ankle_motor_rl_state_sub = nh.subscribe<line_motor_comm_pkg::ankleMotorMsgBack>(ankle_motor_name[2]+"_state", 1, boost::bind(&AnkleMotorPubCallback, _1, anklemotorID));
-	anklemotorID = 3;
-	ros::Subscriber ankle_motor_rr_state_sub = nh.subscribe<line_motor_comm_pkg::ankleMotorMsgBack>(ankle_motor_name[3]+"_state", 1, boost::bind(&AnkleMotorPubCallback, _1, anklemotorID));
-
-    int steps = 0;
-    // 新踝关节电机测试
-	while(ros::ok())
-	{
-		ros::spinOnce();
-		AnkleMotorCMD(1, SPEED_CONTROL_STEP, 0, 0, 0, 20, 0, 5);
-		AnkleMotorCMD(2, SPEED_CONTROL_STEP, 0, 0, 0, 20, 0, 5);
-		// if(steps == 0)
-		// {
-		// 	steps = 1;
-		// 	ankle_motor_ll_msg.motor_state = ZEROS_SETTING_STEP;
-		// 	ankle_motor_lr_msg.motor_state = ZEROS_SETTING_STEP;
-		// }
-		// else if(steps == 1)
-		// {
-		// 	ankle_motor_ll_msg.motor_state = POS_CONTROL_STEP;
-		// 	ankle_motor_ll_msg.pos = 150;
-		// 	ankle_motor_ll_msg.spd = 200;
-		// 	ankle_motor_ll_msg.limit_current = 50;
-		// 	ankle_motor_lr_msg.motor_state = POS_CONTROL_STEP;
-		// 	ankle_motor_lr_msg.pos = 150;
-		// 	ankle_motor_lr_msg.spd = 200;
-		// 	ankle_motor_lr_msg.limit_current = 50;
-		// }	
-		ankle_motor_ll_cmd_pub.publish(ankle_motor_ll_msg);
-		ankle_motor_lr_cmd_pub.publish(ankle_motor_lr_msg);
-		loop_rate.sleep();
-	}
-
-	//B1电机测试
-	JointMotor motorL_0(0, MotorType::B1, nh, motor_name_[0]);//, test_motor_2(0, MotorType::A1);
-	JointMotor motorL_2(2, MotorType::B1, nh, motor_name_[1]);
-	JointMotor motorR_0(0, MotorType::B1, nh, motor_name_[2]);
-	JointMotor motorR_2(2, MotorType::B1, nh, motor_name_[3]);
-
-	// A1电机测试
-	JointMotor motorL_0_a(0, MotorType::A1, nh, motor_name_[4]);//, test_motor_2(0, MotorType::A1);
-	JointMotor motorL_1_a(1, MotorType::A1, nh, motor_name_[5]);
-	JointMotor motorR_0_a(0, MotorType::A1, nh, motor_name_[6]);
-	JointMotor motorR_1_a(1, MotorType::A1, nh, motor_name_[7]);
-ROBOT_START_MODE
-	// 旋转电机读取初始编码值
-	for(int i = 0; i < 2000; i++)
-	// while(1)
-	{
-		ros::spinOnce();
-		motorL_0.BrakMode(1);
-		motorL_2.BrakMode(1);
-		motorR_0.BrakMode(2);
-		motorR_2.BrakMode(2);
-		motorL_0_a.BrakMode(3);
-		motorL_1_a.BrakMode(3);
-		motorR_0_a.BrakMode(4);
-		motorR_1_a.BrakMode(4);
-		usleep(usleep_time);
-	}
-	motorL_0_ORI = motorL_0.motor_ret.q / queryGearRatio(MotorType::B1);	//记录上电初始位置，之后在这个位置的基础上做增量
-	motorL_2_ORI = motorL_2.motor_ret.q / queryGearRatio(MotorType::B1);
-	motorR_0_ORI = motorR_0.motor_ret.q / queryGearRatio(MotorType::B1);ROBOT_START_MODE
-	motorR_2_ORI = motorR_2.motor_ret.q / queryGearRatio(MotorType::B1);
-	
-	motorL_0_ORI_a = motorL_0_a.motor_ret.q / queryGearRatio(MotorType::A1);	//记录上电初始位置，之后在这个位置的基础上做增量
-	motorL_1_ORI_a = motorL_1_a.motor_ret.q / queryGearRatio(MotorType::A1);
-	motorR_0_ORI_a = motorR_0_a.motor_ret.q / queryGearRatio(MotorType::A1);
-	motorR_1_ORI_a = motorR_1_a.motor_ret.q / queryGearRatio(MotorType::A1);
-	
-	std::cout << "motorL_2_ORI   " << motorL_2_ORI << std::endl;
-	std::cout << "motorR_2_ORI   " << motorR_2_ORI << std::endl;
-	std::cout << "motorL_0_ORI   " << motorL_0_ORI << std::endl;
-	std::cout << "motorR_0_ORI   " << motorR_0_ORI << std::endl;
-	std::cout << "motorL_0_ORI_a   " << motorL_0_ORI_a << std::endl;
-	std::cout << "motorL_1_ORI_a   " << motorL_1_ORI_a << std::endl;
-	std::cout << "motorR_0_ORI_a   " << motorR_0_ORI_a << std::endl;
-	std::cout << "motorR_1_ORI_a   " << motorR_1_ORI_a << std::endl;
-	// }	
-
-	// 到绝对位置起点
-	// A1电机复位
-	int InitPoint_num = 1000;
-	for(int i = 0 ; i <= InitPoint_num ; i++)
-	{
-		ros::spinOnce();
-		motorL_0.PosMode(3, 1, motorL_0_ORI + (StartPos_motorL_0 - motorL_0_ORI) * i / (float)InitPoint_num, 1);
-		motorL_2.PosMode(3, 1, motorL_2_ORI + (StartPos_motorL_2 - motorL_2_ORI) * i / (float)InitPoint_num, 1);
-		motorR_0.PosMode(3, 1, motorR_0_ORI + (StartPos_motorR_0 - motorR_0_ORI) * i / (float)InitPoint_num, 2);
-		motorR_2.PosMode(3, 1, motorR_2_ORI + (StartPos_motorR_2 - motorR_2_ORI) * i / (float)InitPoint_num, 2);
-		motorL_0_a.PosMode(0.3, 10, motorL_0_ORI_a + (StartPos_motorL_0_a - motorL_0_ORI_a) * i / (float)InitPoint_num, 3);
-		motorL_1_a.PosMode(0.3, 10, motorL_1_ORI_a + (StartPos_motorL_1_a - motorL_1_ORI_a) * i / (float)InitPoint_num, 3);
-		motorR_0_a.PosMode(0.3, 10, motorR_0_ORI_a + (StartPos_motorR_0_a - motorR_0_ORI_a) * i / (float)InitPoint_num, 4);
-		motorR_1_a.PosMode(0.3, 10, motorR_1_ORI_a + (StartPos_motorR_1_a - motorR_1_ORI_a) * i / (float)InitPoint_num, 4);
-		usleep(usleep_time);
-	}
-	
-	// 给初始位置赋值
-	motorL_0_ORI = StartPos_motorL_0;
-	motorL_2_ORI = StartPos_motorL_2;
-	motorR_0_ORI = StartPos_motorR_0;
-	motorR_2_ORI = StartPos_motorR_2;
-	motorL_0_ORI_a = StartPos_motorL_0_a;
-	motorL_1_ORI_a = StartPos_motorL_1_a;
-	motorR_0_ORI_a = StartPos_motorR_0_a;
-	motorR_1_ORI_a = StartPos_motorR_1_a;
-
-	std::cout << "L-0" << motorL_0.motor_ret.q / queryGearRatio(MotorType::B1) << std::endl;
-	std::cout << "L-2" << motorL_2.motor_ret.q / queryGearRatio(MotorType::B1) << std::endl;
-	std::cout << "R-0" << motorR_0.motor_ret.q / queryGearRatio(MotorType::B1) << std::endl;
-	std::cout << "R-2" << motorR_2.motor_ret.q / queryGearRatio(MotorType::B1) << std::endl;
-	std::cout << "L-0-A" << motorL_0_a.motor_ret.q / queryGearRatio(MotorType::A1) << std::endl;
-	std::cout << "L-1-A" << motorL_1_a.motor_ret.q / queryGearRatio(MotorType::A1) << std::endl;
-	std::cout << "R-0-A" << motorR_0_a.motor_ret.q / queryGearRatio(MotorType::A1) << std::endl;
-	std::cout << "R-1-A" << motorR_1_a.motor_ret.q / queryGearRatio(MotorType::A1) << std::endl;
-
-	line_motor_comm_pkg::linemotorMsgCmd linemotor_left_cmd_msg, linemotor_right_cmd_msg;
-
 	int k_ankle_hip_roll=1;//踝关节侧摆差动大小与髋侧摆的关系
 
 	int TempCnt1 = 0;
@@ -396,9 +263,10 @@ ROBOT_START_MODE
 	}
 
 	int CntPitch = 600;       // 往前迈步时的数组元素位置
+	string
 	// 由直立向左侧摆
 	for(int i = 0 ; i < 0.5 * unit_time ; i++) {      //每次走0.5个unit_time
-		
+		writeToCSV(filename, float data, std::string mark) {
 		motorL_0.PosMode(6, 10, motorL_0_ORI - hip_roll[i % (2 * unit_time)], 1);//“加”为王梦迪的
 		motorR_0.PosMode(6, 10, motorR_0_ORI - hip_roll[i % (2 * unit_time)], 2);
 		motorL_0_a.PosMode(1, 20, motorL_0_ORI_a - anklel_begin[CntPitch - 1] + k_ankle_hip_roll * hip_roll[i % (2 * unit_time)], 3);

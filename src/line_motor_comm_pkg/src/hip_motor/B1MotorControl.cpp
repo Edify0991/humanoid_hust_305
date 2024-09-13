@@ -10,7 +10,7 @@ JointMotor::JointMotor(unsigned short motorID, MotorType motorType, ros::NodeHan
     motor_cmd.id = motorID;
     motor_cmd.motorType = motorType;
     motor_ret.motorType = motorType;
-    motor_ret.q = 100;
+    motor_ret.q = 0;
     motor_cmd_pub = nh.advertise<line_motor_comm_pkg::hipMotorMsgCmd>(motor_name + "_cmd", 1);
     motor_state_sub = nh.subscribe(motor_name + "_state", 1, &JointMotor::MotorStateCallback, this);
 }
@@ -194,9 +194,9 @@ void JointMotor::MotorStateCallback(const line_motor_comm_pkg::hipMotorMsgBack::
     motor_last_ret.tau = motor_ret.tau;
     motor_last_ret.motor_id = motor_ret.motor_id;
 
-    motor_ret.q = msg->q;
-    motor_ret.dq = msg->dq;
-    motor_ret.tau = msg->tau;
+    motor_ret.q = msg->q *  queryGearRatio(MotorType::B1);
+    motor_ret.dq = msg->dq *  queryGearRatio(MotorType::B1);
+    motor_ret.tau = msg->tau /  queryGearRatio(MotorType::B1);
     motor_ret.motor_id = msg->id;
 }
 

@@ -12,6 +12,7 @@
 // 函数接口
 int Can_Channel_Init(int devs, int channel, std::string str);
 void AnkleMotor_Rcv_Fcn(int devs, int channel);
+void AnkleMotor_Send_Fcn(int devs, int channel);
 // 是否控制踝关节电机
 const bool is_ankle_motor_control = true;
 // 踝关节CAN设备命名
@@ -24,10 +25,10 @@ std::vector<std::string> ankle_canDevs_name = {
 
 // 踝关节电机命名
 std::vector<std::string> ankle_motor_name = {
-                                "ankle_motor_ll",
-                                "ankle_motor_lr",
-                                "ankle_motor_rl",
-                                "ankle_motor_rr"
+                                "ankle_motor_ld",
+                                "ankle_motor_lu",
+                                "ankle_motor_rd",
+                                "ankle_motor_ru"
                                 };
 // 踝关节电机与USB_CAN设备对应关系
 std::vector<int> ankle_motor_usb = {
@@ -48,44 +49,26 @@ std::vector<std::thread> ankle_motor_threads;
 std::vector<ros::Publisher> ankle_motor_state_pub;
 std::vector<ankle_motor*> ankle_motor_ports;
 
+// 电机控制变量
+volatile int state[4] = {MIXED_CONTROL_STEP, MIXED_CONTROL_STEP, MIXED_CONTROL_STEP, MIXED_CONTROL_STEP};
+// volatile int state[4] = {POS_CONTROL_STEP, POS_CONTROL_STEP, POS_CONTROL_STEP, POS_CONTROL_STEP};
+volatile float kp[4] = {10, 10, 10, 10};
+volatile float kd[4] = {0.1, 0.1, 0.1, 0.1};
+volatile float pos[4] = {0.0f, 0.0f, 0.0f, 0.0f}; // 弧度
+volatile float spd[4] = {0.8, 0.8, 0.8, 0.8}; // 弧度/秒
+volatile float tau[4] = {0, 0, 0, 0};
+volatile float limit_current[4] = {150,150,150,150};
+
 // 踝关节电机接收到控制命令回调
 void AnkleMotor_CmdCallback(const line_motor_comm_pkg::ankleMotorMsgCmd::ConstPtr& msg, int ankle_motor_thread_id)
 {
-    int state = msg->motor_state;
-    float kp = msg->kp;
-    float kd = msg->kd;
-    float pos = msg->pos; // 传进来的为角度值
-    float spd = msg->spd; // 传进来的为°/s
-    float tau = msg->tau; // 传进来的为牛米
-    float limit_current = msg->limit_current * 10.0f; // 传进来的为限制电流大小, 
-    // 使用send_motor_ctrl_cmd，传入参数为弧度制
-    float pos_rad = pos / 360.0f * 2 * PI;
-    float spd_rad = spd / 360.0f * 2 * PI;
-    // 不同的指令有不同的倍率
-    float spd_x10 = spd * 10.0f;
-    // 待加入电流与转矩的转换关系公式
-    // spd和pos单位都是弧度制, 控制指令发送
-    if(is_ankle_motor_control) 
-    {
-        switch(state)
-        {
-            case ZEROS_SETTING_STEP:
-                ankle_motor_ports[ankle_motor_thread_id]->MotorSetting(SETTING_ZERO_CMD);
-                sleep(1);
-            break;
-            case MIXED_CONTROL_STEP:
-                ankle_motor_ports[ankle_motor_thread_id]->send_motor_ctrl_cmd(kp, kd, pos_rad, spd_rad, tau);
-            break;
-            case POS_CONTROL_STEP:
-                ankle_motor_ports[ankle_motor_thread_id]->set_motor_position(pos, spd_x10, limit_current, MIX_CONTROL_ACK);
-            break;
-            case SPEED_CONTROL_STEP:
-                ankle_motor_ports[ankle_motor_thread_id]->set_motor_speed(spd, limit_current, MIX_CONTROL_ACK);
-            break;
-            default:
-            break;
-        }
-    }
+    state[ankle_motor_thread_id] = msg->motor_state;
+    kp[ankle_motor_thread_id] = msg->kp;
+    kd[ankle_motor_thread_id] = msg->kd;
+    pos[ankle_motor_thread_id] = msg->pos;
+    spd[ankle_motor_thread_id] = msg->spd;
+    tau[ankle_motor_thread_id] = msg->tau;
+    limit_current[ankle_motor_thread_id] = msg->limit_current * 10.0f;
 }
 
 // 踝关节电机线程，用于接收踝关节控制命令
@@ -125,9 +108,18 @@ int main(int argc, char** argv)
     std::cout<<"在线设备数量："<<devs_num<<std::endl;
     Can_Channel_Init(ankle_motor_usb[0], ankle_motor_channel[0], ankle_canDevs_name[0]);
     Can_Channel_Init(ankle_motor_usb[1], ankle_motor_channel[1], ankle_canDevs_name[1]);
-    // Can_Channel_Init(ankle_motor_usb[2], ankle_motor_channel[2], ankle_canDevs_name[2]);
-    // Can_Channel_Init(ankle_motor_usb[3], ankle_motor_channel[3], ankle_canDevs_name[3]);
+    Can_Channel_Init(ankle_motor_usb[2], ankle_motor_channel[2], ankle_canDevs_name[2]);
+    Can_Channel_Init(ankle_motor_usb[3], ankle_motor_channel[3], ankle_canDevs_name[3]);
     
+    // 初始化踝关节电机类
+    for(uint8_t i = 0; i < ankle_motor_name.size(); i++)
+    {
+        ankle_motor* ptr = new ankle_motor(ankle_motor_usb[i], ankle_motor_channel[i], ANKLE_MOTOR_ID);
+        ankle_motor_ports.push_back(ptr);
+        ankle_motor_state_pub[i] = nh.advertise<line_motor_comm_pkg::ankleMotorMsgBack>(ankle_motor_name[i] + "_state", 1);
+        ankle_motor_threads[i] = std::thread(AnkleMotor_CmdThread, i, std::ref(nh));
+    }
+
     // 创建踝关节电机的接收线程
     std::thread AnkleMotor_ll_RcvThread(std::bind(AnkleMotor_Rcv_Fcn, ankle_motor_usb[0], ankle_motor_channel[0]));
     if(AnkleMotor_ll_RcvThread.joinable())
@@ -145,38 +137,96 @@ int main(int argc, char** argv)
     } else {
         std::cerr << "左侧右边脚踝电机接收线程创建失败" << std::endl;
     }
-    // std::thread AnkleMotor_rl_RcvThread(std::bind(AnkleMotor_Rcv_Fcn, ankle_motor_usb[2], ankle_motor_channel[2]));
-    // if(AnkleMotor_rl_RcvThread.joinable())
-    // {
-    //     std::cout << "右侧左边脚踝电机接收线程创建成功" << std::endl;
-    //     AnkleMotor_rl_RcvThread.detach();
-    // } else {
-    //     std::cerr << "右侧左边脚踝电机接收线程创建失败" << std::endl;
-    // }
-    // std::thread AnkleMotor_rr_RcvThread(std::bind(AnkleMotor_Rcv_Fcn, ankle_motor_usb[3], ankle_motor_channel[3]));
-    // if(AnkleMotor_rr_RcvThread.joinable())
-    // {
-    //     std::cout << "右侧右边脚踝电机接收线程创建成功" << std::endl;
-    //     AnkleMotor_rr_RcvThread.detach();
-    // } else {
-    //     std::cerr << "右侧右边脚踝电机接收线程创建失败" << std::endl;
-    // }
-
-    // 初始化踝关节电机类
-    for(uint8_t i = 0; i < ankle_motor_name.size(); i++)
+    std::thread AnkleMotor_rl_RcvThread(std::bind(AnkleMotor_Rcv_Fcn, ankle_motor_usb[2], ankle_motor_channel[2]));
+    if(AnkleMotor_rl_RcvThread.joinable())
     {
-        ankle_motor* ptr = new ankle_motor(ankle_motor_usb[i], ankle_motor_channel[i], ANKLE_MOTOR_ID);
-        ankle_motor_ports.push_back(ptr);
-        ankle_motor_state_pub[i] = nh.advertise<line_motor_comm_pkg::ankleMotorMsgBack>(ankle_motor_name[i] + "_state", 1);
-        ankle_motor_threads[i] = std::thread(AnkleMotor_CmdThread, i, std::ref(nh));
+        std::cout << "右侧左边脚踝电机接收线程创建成功" << std::endl;
+        AnkleMotor_rl_RcvThread.detach();
+    } else {
+        std::cerr << "右侧左边脚踝电机接收线程创建失败" << std::endl;
+    }
+    std::thread AnkleMotor_rr_RcvThread(std::bind(AnkleMotor_Rcv_Fcn, ankle_motor_usb[3], ankle_motor_channel[3]));
+    if(AnkleMotor_rr_RcvThread.joinable())
+    {
+        std::cout << "右侧右边脚踝电机接收线程创建成功" << std::endl;
+        AnkleMotor_rr_RcvThread.detach();
+    } else {
+        std::cerr << "右侧右边脚踝电机接收线程创建失败" << std::endl;
+    }
+
+    std::thread AnkleMotor_ll_SendThread(std::bind(AnkleMotor_Send_Fcn, ankle_motor_usb[0], ankle_motor_channel[0]));
+    if(AnkleMotor_ll_SendThread.joinable())
+    {
+        std::cout << "左侧左边脚踝电机发送线程创建成功" << std::endl;
+        AnkleMotor_ll_SendThread.detach();
+    } else {
+        std::cerr << "左侧左边脚踝电机发送线程创建失败" << std::endl;
+    }
+    std::thread AnkleMotor_lr_SendThread(std::bind(AnkleMotor_Send_Fcn, ankle_motor_usb[1], ankle_motor_channel[1]));
+    if(AnkleMotor_lr_SendThread.joinable())
+    {
+        std::cout << "左侧右边脚踝电机发送线程创建成功" << std::endl;
+        AnkleMotor_lr_SendThread.detach();
+    } else {
+        std::cerr << "左侧右边脚踝电机发送线程创建失败" << std::endl;
+    }
+    std::thread AnkleMotor_rl_SendThread(std::bind(AnkleMotor_Send_Fcn, ankle_motor_usb[2], ankle_motor_channel[2]));
+    if(AnkleMotor_rl_SendThread.joinable())
+    {
+        std::cout << "右侧左边脚踝电机发送线程创建成功" << std::endl;
+        AnkleMotor_rl_SendThread.detach();
+    } else {
+        std::cerr << "右侧左边脚踝电机发送线程创建失败" << std::endl;
+    }
+    std::thread AnkleMotor_rr_SendThread(std::bind(AnkleMotor_Send_Fcn, ankle_motor_usb[3], ankle_motor_channel[3]));
+    if(AnkleMotor_rr_SendThread.joinable())
+    {
+        std::cout << "右侧右边脚踝电机发送线程创建成功" << std::endl;
+        AnkleMotor_rr_SendThread.detach();
+    } else {
+        std::cerr << "右侧右边脚踝电机发送线程创建失败" << std::endl;
     }
 
     for(auto& thread : ankle_motor_threads)
     {
-        thread.join();
+        thread.detach();
     }
+    while(ros::ok()){}
+}
 
-    return 0;
+void AnkleMotor_Send_Fcn(int devs, int channel)
+{
+    int i = devs * 2 + channel;
+    ros::Rate loop_rate(1000);
+    while(ros::ok())
+    {
+        // msg传入消息为度和度每秒, 使用send_motor_ctrl_cmd，传入参数为弧度制
+        float pos_rad = pos[i];
+        float spd_rad = spd[i];
+        float spd_rpm = ((spd_rad * 30.0f) / PI) * 10; // 传入函数的需要乘以10
+        float pos_o = pos_rad / PI * 180.0f;
+        // float spd_o = spd_rad / PI * 180.0f;
+        // 不同的指令有不同的倍率
+        // float spd_x10 = spd_o * 10.0f;
+        switch(state[i])
+        {
+            case ZEROS_SETTING_STEP:
+                ankle_motor_ports[i]->MotorSetting(SETTING_ZERO_CMD);
+            break;
+            case MIXED_CONTROL_STEP:
+                ankle_motor_ports[i]->send_motor_ctrl_cmd(kp[i], kd[i], pos_rad, spd_rad, tau[i]);
+            break;
+            case POS_CONTROL_STEP:
+                ankle_motor_ports[i]->set_motor_position(pos_o, spd_rpm, limit_current[i], MIX_CONTROL_ACK);
+            break;
+            case SPEED_CONTROL_STEP:
+                ankle_motor_ports[i]->set_motor_speed(spd_rpm, limit_current[i], MIX_CONTROL_ACK);
+            break;
+            default:
+            break;
+        }
+        loop_rate.sleep();
+    }
 }
 
 void AnkleMotor_Rcv_Fcn(int devs, int channel)
@@ -192,12 +242,13 @@ void AnkleMotor_Rcv_Fcn(int devs, int channel)
             for(int j = 0; j < reclen; j++)
             {
                 ankle_motor_ports[i]->RV_can_data_repack(rcv_msg[j], COMM_RESPONSE_MODE);
-                ankle_motor_ret_msg.tau = ankle_motor_ports[i]->rv_motor_msg[0].current_actual_float * ANKLE_MOTOR_KT;
-                ankle_motor_ret_msg.spd = ankle_motor_ports[i]->rv_motor_msg[0].speed_actual_rad;
-                ankle_motor_ret_msg.pos = ankle_motor_ports[i]->rv_motor_msg[0].angle_actual_rad;
+                ankle_motor_ret_msg.tau = ankle_motor_ports[i]->rv_motor_msg[0].current_actual_float * ANKLE_MOTOR_KT; // 返回力矩值
+                ankle_motor_ret_msg.spd = ankle_motor_ports[i]->rv_motor_msg[0].speed_actual_rad; // 返回弧度
+                ankle_motor_ret_msg.pos = ankle_motor_ports[i]->rv_motor_msg[0].angle_actual_rad; // 返回弧度
             }
+            std::cout<<"pos_rad:"<<i<<":"<<ankle_motor_ret_msg.pos<<std::endl;
             ankle_motor_state_pub[i].publish(ankle_motor_ret_msg);
-            std::cout<<"spd:"<<i<<":"<<ankle_motor_ret_msg.spd<<std::endl;
+            //std::cout<<"spd:"<<i<<":"<<ankle_motor_ret_msg.spd<<std::endl;
         }
     }
 }

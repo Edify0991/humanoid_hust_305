@@ -160,7 +160,7 @@ add_dependencies(util ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARG
 
 add_library(ModbusCommDrv
   include/Modbus_Comm.h
-  src/knee_motor/ModbusCommDrv.cpp
+  src/knee_motor/ModbusCommDrv_new.cpp
 )
 
 add_dependencies(ModbusCommDrv ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -217,7 +217,7 @@ endif()
 #  ${EXTRA_LIBS}
 #)
 
-add_executable(robot_main_node src/robot_main_node.cpp src/knee_motor/ModbusCommDrv.cpp src/hip_motor/B1MotorControl.cpp)
+add_executable(robot_main_node src/robot_main_node.cpp src/knee_motor/ModbusCommDrv_new.cpp src/hip_motor/B1MotorControl.cpp)
 
 add_dependencies(robot_main_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
@@ -272,6 +272,14 @@ target_link_libraries(can_node
      ${catkin_LIBRARIES}
      canbus
 )
+
+#tcp服务器端节点,订阅话题后用tcp发出去
+add_executable(tcp_server_node 
+                src/tcp_server_node.cpp)
+target_link_libraries(tcp_server_node
+                      ${catkin_LIBRARIES})          
+
+
 
 #add_executable(Single_Leg_Standing_node src/SingleStanding.cpp src/ModbusCommDrv.cpp src/B1MotorControl.cpp)
 

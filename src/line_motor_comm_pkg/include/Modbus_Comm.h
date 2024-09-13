@@ -55,6 +55,7 @@ public:
     uint16_t RPdo1_COB_ID; // COB-ID = Object function code(4bit) + Node addr(7bit)
     uint16_t RPdo2_COB_ID;
     uint16_t TPdo1_COB_ID;
+    uint16_t TPdo2_COB_ID;
     uint32_t Sdo_COB_ID; 
 
     SERVO_TO_MASTER_PDO feedback; // 接收驱动器返回的状态字和位置反馈，提供给开发者
@@ -75,6 +76,9 @@ public:
     void DrvEnable(void);   // 驱动器使能 
     void DrvReset(void);    // 直线电机复位
     void DrvPosMode(void); // 设置到轮廓位置模式
+
+    void TPdo1Comm(bool sw);
+    void TPdo2Comm(bool sw);
 
     void NMT_Enable(uint8_t addr);
     int32_t fPos_to_iPos_Fcn(float target_position);  // 浮点位置指令转为供驱动器使用的int32位置指令

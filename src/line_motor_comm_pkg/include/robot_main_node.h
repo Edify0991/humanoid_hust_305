@@ -7,7 +7,9 @@ enum ROBOT_STATE
     ROBOT_CALIBRATION_MODE,
     ROBOT_INIT_MODE,
     ROBOT_TEST_MODE,
-    ROBOT_RL_MODE
+    ROBOT_NOTHING_MODE,
+    ROBOT_RL_MODE,
+    ROBOT_OPENLOOP_MODE
 };
 
 enum MOTOR_STATE
@@ -18,9 +20,14 @@ enum MOTOR_STATE
 };
 
 typedef struct{
-    float ankle_motor[4];
-    float hip_motor[4];
-    float knee_motor[2];
+    float ankle_motor_pos[4];
+    float ankle_motor_tau2pos[4];
+    float hip_motor_pos[4];
+    float hip_motor_tau2pos[4];
+    float knee_motor_pos[2];
+    float ankle_motor_spd[4];
+    float hip_motor_spd[4];
+    float knee_motor_spd[2];
 } RL_MotorsCmd;
 
 #define ANKLE_LL_MOTOR_NUM         1

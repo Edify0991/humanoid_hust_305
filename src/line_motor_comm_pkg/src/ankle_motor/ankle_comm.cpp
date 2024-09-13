@@ -100,7 +100,7 @@ void ankle_motor::MotorIDReading(void)
 /*
 motor_id:1~0x7FE
 kp:0~500
-kd:0~50
+kd:0~5
 pos:-12.5rad~12.5rad
 spd:-18rad/s~18rad/s
 tor:-30Nm~30Nm

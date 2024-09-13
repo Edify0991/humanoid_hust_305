@@ -26,12 +26,19 @@ KERNELS=="3-8.3.4:1.0", MODE:="0777", GROUP:="dialout", SYMLINK+="usb_hip_rb"
 // 是否控制电机
 const bool control_motor = true;
 // 定义所有的电机的名字 第一个l/r表示左右腿，第二个l/r/f/b表示在腿上的位置
+// std::vector<std::string> motor_name_ = { 
+//                                 // "imu",
+// 								"hip_lb",
+//                                 "hip_ll",  
+//                                 "hip_rb",
+//                                 "hip_rr", 
+//                                 };
 std::vector<std::string> motor_name_ = { 
                                 // "imu",
-								"hip_lb",
-                                "hip_ll",  
-                                "hip_rb",
-                                "hip_rr", 
+                                "hip_left_roll",
+								"hip_left_pitch",
+                                "hip_right_roll",
+                                "hip_right_pitch",
                                 };
 
 std::vector<std::thread> threads;
@@ -108,7 +115,7 @@ void UnitreeMotor_CmdThread(int motor_id, ros::NodeHandle nh)
 
 int main(int argc, char** argv)
 {
-    ros::init(argc, argv, "motor_node");
+    ros::init(argc, argv, "hip_motor_node");
     ros::NodeHandle nh;
 
     threads.resize(motor_name_.size());
@@ -118,7 +125,7 @@ int main(int argc, char** argv)
     for(int i=0;i<motor_name_.size();i++)
     {
 
-        motor_ports.push_back(new SerialPort("/dev/usb_" + motor_name_[i]));
+        motor_ports.push_back(new SerialPort("/dev/USB_" + motor_name_[i]));
         motor_state_pub[i] = nh.advertise<line_motor_comm_pkg::hipMotorMsgBack>(motor_name_[i] + "_state", 1);
         threads[i] = std::thread(UnitreeMotor_CmdThread, i, std::ref(nh));    
     }

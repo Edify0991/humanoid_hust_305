@@ -11,6 +11,7 @@
  * 第二次修改：2024年7月10日，行程开关硬件调试完成
  *           完成驱动器反向行程复位操作和接收线程，完成B1电机与膝关节电机集成
  *           后续需增加新的功能包实现运动控制
+ * 第三次修改：2024年9月12日，新增加实际速度反馈值TPDO参数列表
  */
 #include <iostream>
 #include <string.h>
@@ -41,6 +42,10 @@ LineMotor::LineMotor(uint8_t addr, int CANIndex): addr_BUS(addr), CANIndex(CANIn
     TPdo1_COB_ID = 0x180 + addr_BUS;       // 启用TPDO1
     uint8_t Tx_COB_ID_H = (uint8_t)(TPdo1_COB_ID >> 8) & 0x00ff;
     uint8_t Tx_COB_ID_L = (uint8_t)(TPdo1_COB_ID & 0x00ff);
+
+    TPdo2_COB_ID = 0x280 + addr_BUS;       // 启用TPDO2
+    uint8_t Tx2_COB_ID_H = (uint8_t)(TPdo2_COB_ID >> 8) & 0x00ff;
+    uint8_t Tx2_COB_ID_L = (uint8_t)(TPdo2_COB_ID & 0x00ff);
 
     RPdo1_COB_ID = 0x200 + addr_BUS;       // 启用RPDO1
     uint8_t Rx_COB_ID_H = (uint8_t)(RPdo1_COB_ID >> 8) & 0x00ff;
@@ -100,22 +105,42 @@ LineMotor::LineMotor(uint8_t addr, int CANIndex): addr_BUS(addr), CANIndex(CANIn
 
     // 配置TPDO1
     // sub-index = 0x01:状态字
-    // sub-index = 0x02:反馈位置
-    // PDO事件定时上报，周期时间50ms，静止时间为0
-    uint8_t temp_data_2[9][8] = {{0x23, 0x00, 0x18, 0x01, Tx_COB_ID_L, Tx_COB_ID_H, 0x00, 0x80},       // 0x1800-01h:TPDO1的COB-ID
+    // PDO事件定时上报，周期时间2ms，静止时间为0
+    uint8_t temp_data_2[8][8] = {{0x23, 0x00, 0x18, 0x01, Tx_COB_ID_L, Tx_COB_ID_H, 0x00, 0x80},       // 0x1800-01h:TPDO1的COB-ID
                                 {0x2F, 0x00, 0x18, 0x02, 0xff, 0x00, 0x00, 0x00},                      // 0xff:映射数据发生改变或者事件计时器到达则发送该TPDO
                                 {0x2B, 0x00, 0x18, 0x03, 0x00, 0x00, 0x00, 0x00},                      // 0x2B:Data为2Byte 0x1800-03h:设置TPDO静止时间，单位为100us，同一个TPDO传输时间间隔不得小于该参数对应的禁止时间
                                 {0x2B, 0x00, 0x18, 0x05, 0x02, 0x00, 0x00, 0x00},                      // 0x1800-05h:定义事件计时器，单位ms，这里为50ms
                                 {0x2F, 0x00, 0x1A, 0x00, 0x00, 0x00, 0x00, 0x00},                      // 0x1A00h:TPDO1映射对象
                                 {0x23, 0x00, 0x1A, 0x01, 0x10, 0x00, 0x41, 0x60},                      // 0x6041h:状态字
-                                {0x23, 0x00, 0x1A, 0x02, 0x20, 0x00, 0x64, 0x60},                      // 0x6064h:位置反馈，反映实时用户绝对位置反馈(指令单位)，用户位置反馈(6064h )× 齿轮比(6091h) = 电机位置反馈(6063h)
-                                {0x2F, 0x00, 0x1A, 0x00, 0x02, 0x00, 0x00, 0x00}, 
-                                {0x23, 0x00, 0x18, 0x01, Tx_COB_ID_L, Tx_COB_ID_H, 0x00, 0x00}, 
+                                {0x2F, 0x00, 0x1A, 0x00, 0x01, 0x00, 0x00, 0x00}, 
+                                {0x23, 0x00, 0x18, 0x01, Tx_COB_ID_L, Tx_COB_ID_H, 0x00, 0x80}, 
                                 };
     sendTodriver_msg.ID = Sdo_COB_ID;
     for(int i = 0; i < 9; i++)
     {
         array_copy(sendTodriver_msg.Data, temp_data_2[i], 8);
+        VCI_Transmit(VCI_USBCAN2, 0, CANIndex, &sendTodriver_msg, 1);
+        usleep(10000);
+    }
+
+    // 配置TPDO2
+    // sub-index = 0x01:反馈位置
+    // sub-index = 0x02:反馈速度
+    // PDO事件定时上报，周期时间1ms
+    uint8_t temp_data_tpdo2[9][8] = {{0x23, 0x01, 0x18, 0x01, Tx2_COB_ID_L, Tx2_COB_ID_H, 0x00, 0x80}, // 0x1800-01h:TPDO2的COB-ID
+                                {0x2F, 0x01, 0x18, 0x02, 0xff, 0x00, 0x00, 0x00},                      // 0xff:映射数据发生改变或者事件计时器到达则发送该TPDO
+                                {0x2B, 0x01, 0x18, 0x03, 0x00, 0x00, 0x00, 0x00},                      // 0x2B:Data为2Byte 0x1800-03h:设置TPDO静止时间，单位为100us，同一个TPDO传输时间间隔不得小于该参数对应的禁止时间
+                                {0x2B, 0x01, 0x18, 0x05, 0x01, 0x00, 0x00, 0x00},                      // 0x1800-05h:定义事件计时器，单位ms，这里为50ms
+                                {0x2F, 0x01, 0x1A, 0x00, 0x00, 0x00, 0x00, 0x00},                      // 0x1A00h:TPDO1映射对象
+                                {0x23, 0x01, 0x1A, 0x01, 0x20, 0x00, 0x64, 0x60},                      // 
+                                {0x23, 0x01, 0x1A, 0x02, 0x20, 0x00, 0x6C, 0x60},                      // 0x6064h:位置反馈，反映实时用户绝对位置反馈(指令单位)，用户位置反馈(6064h )× 齿轮比(6091h) = 电机位置反馈(6063h)
+                                {0x2F, 0x01, 0x1A, 0x00, 0x02, 0x00, 0x00, 0x00}, 
+                                {0x23, 0x01, 0x18, 0x01, Tx2_COB_ID_L, Tx2_COB_ID_H, 0x00, 0x80}, 
+                                };
+    sendTodriver_msg.ID = Sdo_COB_ID;
+    for(int i = 0; i < 9; i++)
+    {
+        array_copy(sendTodriver_msg.Data, temp_data_tpdo2[i], 8);
         VCI_Transmit(VCI_USBCAN2, 0, CANIndex, &sendTodriver_msg, 1);
         usleep(10000);
     }
@@ -395,6 +420,30 @@ void LineMotor::NMT_Enable(uint8_t addr)
     array_copy(sendtoDrv.Data, &data[0], 2);
     VCI_Transmit(VCI_USBCAN2, 0, CANIndex, &sendtoDrv, 1);
     usleep(10000);
+}
+void LineMotor::TPdo1Comm(bool sw)
+{
+    uint8_t Tx_COB_ID_H = (uint8_t)(TPdo1_COB_ID >> 8) & 0x00ff;
+    uint8_t Tx_COB_ID_L = (uint8_t)(TPdo1_COB_ID & 0x00ff);
+
+    uint8_t high_byte = (sw == 1)?0x00:0x80;
+    uint8_t temp_data[8] = {0x23, 0x00, 0x18, 0x01, Tx_COB_ID_L, Tx_COB_ID_H, 0x00, high_byte};
+    sendTodriver_msg.ID = Sdo_COB_ID;
+    array_copy(sendTodriver_msg.Data, temp_data, 8);
+    VCI_Transmit(VCI_USBCAN2, 0, CANIndex, &sendTodriver_msg, 1);
+    usleep(2000);
+}
+void LineMotor::TPdo2Comm(bool sw)
+{
+    uint8_t Tx2_COB_ID_H = (uint8_t)(TPdo2_COB_ID >> 8) & 0x00ff;
+    uint8_t Tx2_COB_ID_L = (uint8_t)(TPdo2_COB_ID & 0x00ff);
+
+    uint8_t high_byte = (sw == 1)?0x00:0x80;
+    uint8_t temp_data[8] = {0x23, 0x01, 0x18, 0x01, Tx2_COB_ID_L, Tx2_COB_ID_H, 0x00, high_byte};
+    sendTodriver_msg.ID = Sdo_COB_ID;
+    array_copy(sendTodriver_msg.Data, temp_data, 8);
+    VCI_Transmit(VCI_USBCAN2, 0, CANIndex, &sendTodriver_msg, 1);
+    usleep(2000);
 }
 /*
  * 函数名称：fPos_to_iPos_Fcn

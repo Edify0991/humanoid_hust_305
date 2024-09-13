@@ -38,8 +38,10 @@ volatile uint16_t status_word = 0x00;
 volatile uint8_t go_zero_status_1 = 0;
 volatile uint8_t go_zero_status_2 = 0;
 volatile uint8_t drv_ready = 0;
-volatile uint RTPos_left;//左腿绝对位置,1mm对应50编码器值
+volatile uint RTPos_left; //左腿绝对位置,1mm对应50编码器值
+volatile int RTSpd_left;  // 左腿运动速度
 volatile uint RTPos_right;//右腿绝对位置
+volatile int RTSpd_right; // 右腿运动速度
 
 auto start_time = std::chrono::high_resolution_clock::now();
 void LineMotorCmdCallback(const line_motor_comm_pkg::linemotorMsgCmd::ConstPtr& msg, int lineMotorID)
@@ -48,7 +50,7 @@ void LineMotorCmdCallback(const line_motor_comm_pkg::linemotorMsgCmd::ConstPtr& 
     relPos = msg->x;
     refSpeed = msg->dx;
     
-	std::cout << "lineMOtorID :   " << lineMotorID << std::endl;
+	// std::cout << "lineMOtorID :   " << lineMotorID << std::endl;
 	Linemotor_ports[lineMotorID]->Clear_PosCmd();
     if(control_motor) Linemotor_ports[lineMotorID]->RelPos_Set(relPos, refSpeed);
 
@@ -149,6 +151,13 @@ int main(int argc, char** argv)
     Linemotor_ports.push_back(new LineMotor(1, 1));
     Linemotor_ports.push_back(new LineMotor(2, 0));
 
+	// 打开TPDO1发送
+	Linemotor_ports[0]->TPdo1Comm(1);
+	Linemotor_ports[1]->TPdo1Comm(1);
+	// 关闭TPDO2发送
+	Linemotor_ports[0]->TPdo2Comm(0);
+	Linemotor_ports[1]->TPdo2Comm(0);
+
 	Linemotor_ports[0]->DrvEnable();
 	Linemotor_ports[1]->DrvEnable();
 
@@ -175,7 +184,8 @@ int main(int argc, char** argv)
     {
         thread.detach();
     }
-    while(ros::ok()){}
+    while(ros::ok()){
+	}
     return 0;
 }
 
@@ -245,6 +255,12 @@ void Receive_Zero_Fcn(int CANIndex)
 		}
 		if (go_zero_status_1 && go_zero_status_2)
 		{
+			// 关闭TPDO1发送
+			Linemotor_ports[0]->TPdo1Comm(0);
+			Linemotor_ports[1]->TPdo1Comm(0);
+			// 打开TPDO2发送
+			Linemotor_ports[0]->TPdo2Comm(1);
+			Linemotor_ports[1]->TPdo2Comm(1);
 			break;
 		}
 		
@@ -261,6 +277,7 @@ void Receive_Linemotor_Fcn(int CANIndex)
 	//while((*run) & 0x0f)
 
     line_motor_comm_pkg::linemotorMsgBack linemotor_ret_msg;
+
     
 	while(1)
 	{
@@ -271,7 +288,7 @@ void Receive_Linemotor_Fcn(int CANIndex)
 			for(int j = 0; j < reclen; j++)
 			{
 				std::cout<<"ID:   " << std::hex<<(rec[j].ID)<<std::endl;
-				if(rec[j].ID  == 0x181) // sdo ID = 1
+				if(rec[j].ID  == 0x281) // sdo ID = 1
 				{
 					if(rec[j].Data[0] == 0x80)
 					{
@@ -287,48 +304,28 @@ void Receive_Linemotor_Fcn(int CANIndex)
 					// cout<<"rec["<<j<<"].Data["<<i<<"]:  "<<std::hex<< (rec[j].Data[i] & 0xFF) << "  ";
 					}
 					// cout << endl;
-					RTPos_left = (((uint)rec[j].Data[5] << 24) | ((uint)rec[j].Data[4] << 16) | ((uint)rec[j].Data[3] << 8) | (uint)rec[j].Data[2]);
-					
-                    linemotor_ret_msg.id = 0;
+					// RTPos_left = (((uint)rec[j].Data[5] << 24) | ((uint)rec[j].Data[4] << 16) | ((uint)rec[j].Data[3] << 8) | (uint)rec[j].Data[2]);
+					RTPos_left = (((uint)rec[j].Data[3] << 24) | ((uint)rec[j].Data[2] << 16) | ((uint)rec[j].Data[1] << 8) | (uint)rec[j].Data[0]);
+                    RTSpd_left = (((uint8_t)rec[j].Data[7] << 24) | ((uint8_t)rec[j].Data[6] << 16) | ((uint8_t)rec[j].Data[5] << 8) | (uint8_t)rec[j].Data[4]);
+					linemotor_ret_msg.id = 0;
                     linemotor_ret_msg.x = RTPos_left / 50.0;
+					linemotor_ret_msg.dx = RTSpd_left / 50.0;
                     linemotor_state_pub[0].publish(linemotor_ret_msg);
-                    std::cout<<"线程中的RTPos_left:= "<<std::endl;
+                    // std::cout<<"线程中的RTPos_left:= "<<linemotor_ret_msg.x<<std::endl;
+					std::cout<<"线程中的RTSpd_left:= "<<linemotor_ret_msg.dx<<std::endl;
 					// cout<<"线程中的函数增量"<<(float)((1000-RTPos_left)/50.0)<<endl;
 				}
-				else if(rec[j].ID  == 0x0182)
+				else if(rec[j].ID  == 0x0282)
 				{
-					RTPos_right = (((uint)rec[j].Data[5] << 24) | ((uint)rec[j].Data[4] << 16) | ((uint)rec[j].Data[3] << 8) | (uint)rec[j].Data[2]);
-                    linemotor_ret_msg.id = 1;
+					RTPos_right = (((uint)rec[j].Data[3] << 24) | ((uint)rec[j].Data[2] << 16) | ((uint)rec[j].Data[1] << 8) | (uint)rec[j].Data[0]);
+                    RTSpd_right = (((uint8_t)rec[j].Data[7] << 24) | ((uint8_t)rec[j].Data[6] << 16) | ((uint8_t)rec[j].Data[5] << 8) | (uint8_t)rec[j].Data[4]);
+					linemotor_ret_msg.id = 1;
                     linemotor_ret_msg.x = RTPos_right / 50.0;
+					linemotor_ret_msg.dx = RTSpd_right / 50.0;
                     linemotor_state_pub[1].publish(linemotor_ret_msg);
+					// std::cout<<"线程中的RTPos_left:= "<<linemotor_ret_msg.x<<std::endl;
+					std::cout<<"线程中的RTSpd_left:= "<<linemotor_ret_msg.dx<<std::endl;
                 }
-				// if((rec[j].ID & 0x0582) == 0x0582) // sdo ID = 2
-				// {
-				// 	if(rec[j].Data[0] == 0x80)
-				// 	{
-				// 		ROS_ERROR_STREAM("Driver(ID=%d) is abnormal!"<<(rec[j].ID & 0x001));
-				// 	}
-				// 	else if(rec[j].Data[0] == 0x4b)// 查询status word位状态
-				// 	{
-				// 		//status_word = (rec[j].Data[] [j].Data[4]);
-				// 	}
-				// 	cout<<"id = 2（右腿）  ";
-				// 	for(int i=0;i<8;i++)
-				// 	{
-				// 	cout<<"rec["<<j<<"].Data["<<i<<"]:  "<<std::hex<< (rec[j].Data[i] & 0xFF) << "  ";
-				// 	}
-				// cout << endl;
-				// }
-				
-				
-				//读取位置，查CANopen手册
-
-
-				//读取数据
-
-
-
-
 			}
 		}
 	}
