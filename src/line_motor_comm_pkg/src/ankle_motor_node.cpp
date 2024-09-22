@@ -27,8 +27,8 @@ std::vector<std::string> ankle_canDevs_name = {
 std::vector<std::string> ankle_motor_name = {
                                 "ankle_motor_ld",
                                 "ankle_motor_lu",
-                                "ankle_motor_rd",
-                                "ankle_motor_ru"
+                                "ankle_motor_ru",
+                                "ankle_motor_rd"
                                 };
 // 踝关节电机与USB_CAN设备对应关系
 std::vector<int> ankle_motor_usb = {
@@ -55,7 +55,7 @@ volatile int state[4] = {MIXED_CONTROL_STEP, MIXED_CONTROL_STEP, MIXED_CONTROL_S
 volatile float kp[4] = {10, 10, 10, 10};
 volatile float kd[4] = {0.1, 0.1, 0.1, 0.1};
 volatile float pos[4] = {0.0f, 0.0f, 0.0f, 0.0f}; // 弧度
-volatile float spd[4] = {0.8, 0.8, 0.8, 0.8}; // 弧度/秒
+volatile float spd[4] = {0.0, 0.0, 0.0, 0.0}; // 弧度/秒
 volatile float tau[4] = {0, 0, 0, 0};
 volatile float limit_current[4] = {150,150,150,150};
 
@@ -242,12 +242,13 @@ void AnkleMotor_Rcv_Fcn(int devs, int channel)
             for(int j = 0; j < reclen; j++)
             {
                 ankle_motor_ports[i]->RV_can_data_repack(rcv_msg[j], COMM_RESPONSE_MODE);
-                ankle_motor_ret_msg.tau = ankle_motor_ports[i]->rv_motor_msg[0].current_actual_float * ANKLE_MOTOR_KT; // 返回力矩值
+                ankle_motor_ret_msg.tau = ankle_motor_ports[i]->rv_motor_msg[0].current_actual_float * 2.1f; // 返回力矩值
                 ankle_motor_ret_msg.spd = ankle_motor_ports[i]->rv_motor_msg[0].speed_actual_rad; // 返回弧度
                 ankle_motor_ret_msg.pos = ankle_motor_ports[i]->rv_motor_msg[0].angle_actual_rad; // 返回弧度
+                std::cout<<"tau_actual_float->"<<i<<":"<<ankle_motor_ret_msg.tau<<std::endl;
+                std::cout<<"pos_actual_float->"<<i<<":"<<ankle_motor_ret_msg.pos<<std::endl;
+                ankle_motor_state_pub[i].publish(ankle_motor_ret_msg);
             }
-            std::cout<<"pos_rad:"<<i<<":"<<ankle_motor_ret_msg.pos<<std::endl;
-            ankle_motor_state_pub[i].publish(ankle_motor_ret_msg);
             //std::cout<<"spd:"<<i<<":"<<ankle_motor_ret_msg.spd<<std::endl;
         }
     }

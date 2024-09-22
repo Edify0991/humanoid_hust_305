@@ -6,7 +6,8 @@ WitSensor::WitSensor()
 {
     data_ready = 0;
     serial::Timeout _time =serial::Timeout::simpleTimeout(2000); 
-    serial_port.setPort("/dev/ttyUSB4");
+    // serial_port.setPort("/dev/USB_imu");
+    serial_port.setPort("/dev/ttyUSB22");
     serial_port.open();
     if(serial_port.isOpen())
     {

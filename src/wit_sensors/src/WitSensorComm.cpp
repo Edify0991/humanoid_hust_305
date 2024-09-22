@@ -40,7 +40,7 @@ int main(int argc, char** argv)
     {
         cout<<"姿态传感器接收线程创建成功"<<endl;
     }
-    ros::Rate loop_rate(20); // 20Hz，50ms读取一次数据
+    ros::Rate loop_rate(150); // 20Hz，50ms读取一次数据
     while(ros::ok)
     {
         if(hwt901b.data_ready)

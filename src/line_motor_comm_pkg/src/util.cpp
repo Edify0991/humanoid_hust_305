@@ -308,7 +308,8 @@ namespace util
         }
     }
 
-    int readdatafromcsv(float** left_hip_roll, float** left_pitch, float** left_knee, float** left_ankle, float** left_foot, float** right_hip_roll, float** right_pitch, float** right_knee, float** right_ankle, float** right_foot, const std::string& filename) {
+    int readdatafromcsv(float** left_hip_roll, float** left_hip_pitch, float** left_knee, float** left_ankle_left, float** left_ankle_right, 
+                        float** right_hip_roll, float** right_hip_pitch, float** right_knee, float** right_ankle_left, float** right_ankle_right, const std::string& filename) {
         
         // 注意此函数读取的文件第一行是字符串名字
         std::ifstream file(filename);
@@ -331,15 +332,15 @@ namespace util
 
         // 给数组分配存储空间
         *left_hip_roll = new float[line_count-1];
-        *left_pitch = new float[line_count-1];
+        *left_hip_pitch = new float[line_count-1];
         *left_knee = new float[line_count-1];
-        *left_ankle = new float[line_count-1];
-        *left_foot = new float[line_count-1];
+        *left_ankle_left = new float[line_count-1];
+        *left_ankle_right = new float[line_count-1];
         *right_hip_roll = new float[line_count-1];
-        *right_pitch = new float[line_count-1];
+        *right_hip_pitch = new float[line_count-1];
         *right_knee = new float[line_count-1];
-        *right_ankle = new float[line_count-1];
-        *right_foot = new float[line_count-1];
+        *right_ankle_left = new float[line_count-1];
+        *right_ankle_right = new float[line_count-1];
 
         std::ifstream file_getdata(filename);
         if (file_getdata.is_open()) {
@@ -354,55 +355,55 @@ namespace util
                 }
                 for (int i = 0; std::getline(ss, cell, ','); ++i) {
                     switch(i) {
-                        case 0:	// 第一列——left_angle_rad1
+                        case 0:	// left_hip_roll
                         {	
                             (*left_hip_roll)[num-1] = std::stof(cell);
                             break; // 仅获取第二列后退出循环
                         }
-                        case 1:	// left_line
+                        case 1:	// left_hip_pitch
                         {	
-                            (*left_pitch)[num-1] = std::stof(cell);
-                            (*left_pitch)[num-1] = -(*left_pitch)[num-1];
+                            (*left_hip_pitch)[num-1] = std::stof(cell);
+                            // (*left_hip_pitch)[num-1] = -(*left_hip_pitch)[num-1];
                             break; // 仅获取第二列后退出循环
                         }
-                        case 2:	// left_angle_rad3
+                        case 2:	// left_knee
                         {	
                             (*left_knee)[num-1] = std::stof(cell);
                             break; // 仅获取第二列后退出循环
                         }
-                        case 3:	// right_angle_rad1
+                        case 3:	// left_ankle_left
                         {	
-                            (*left_ankle)[num-1] = std::stof(cell);
+                            (*left_ankle_left)[num-1] = std::stof(cell);
                             break; // 仅获取第二列后退出循环
                         }
-                        case 4:	// right_line
+                        case 4:	// left_ankle_right
                         {	
-                            (*left_foot)[num-1] = std::stof(cell);
+                            (*left_ankle_right)[num-1] = std::stof(cell);
                             break; // 仅获取第二列后退出循环
                         }
-                        case 5:	// 第一列——left_angle_rad1
+                        case 5:	// right_hip_roll
                         {	
                             (*right_hip_roll)[num-1] = std::stof(cell);
                             break; // 仅获取第二列后退出循环
                         }
-                        case 6:	// left_line
+                        case 6:	// right_hip_pitch
                         {	
-                            (*right_pitch)[num-1] = std::stof(cell);
+                            (*right_hip_pitch)[num-1] = std::stof(cell);
                             break; // 仅获取第二列后退出循环
                         }
-                        case 7:	// left_angle_rad3
+                        case 7:	// right_knee
                         {	
                             (*right_knee)[num-1] = std::stof(cell);
                             break; // 仅获取第二列后退出循环
                         }
-                        case 8:	// right_angle_rad1
+                        case 8:	// right_ankle_left
                         {	
-                            (*right_ankle)[num-1] = std::stof(cell);
+                            (*right_ankle_left)[num-1] = std::stof(cell);
                             break; // 仅获取第二列后退出循环
                         }
-                        case 9:	// right_line
+                        case 9:	// right_ankle_right
                         {	
-                            (*right_foot)[num-1] = std::stof(cell);
+                            (*right_ankle_right)[num-1] = std::stof(cell);
                             break; // 仅获取第二列后退出循环
                         }
                         default:
